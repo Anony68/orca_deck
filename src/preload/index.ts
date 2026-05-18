@@ -2471,8 +2471,9 @@ const api = {
     readClipboardText: (): Promise<string> => ipcRenderer.invoke('clipboard:readText'),
     readSelectionClipboardText: (): Promise<string> =>
       ipcRenderer.invoke('clipboard:readSelectionText'),
-    saveClipboardImageAsTempFile: (): Promise<string | null> =>
-      ipcRenderer.invoke('clipboard:saveImageAsTempFile'),
+    saveClipboardImageAsTempFile: (args?: {
+      connectionId?: string | null
+    }): Promise<string | null> => ipcRenderer.invoke('clipboard:saveImageAsTempFile', args),
     writeClipboardText: (text: string): Promise<void> =>
       ipcRenderer.invoke('clipboard:writeText', text),
     writeSelectionClipboardText: (text: string): Promise<void> =>
