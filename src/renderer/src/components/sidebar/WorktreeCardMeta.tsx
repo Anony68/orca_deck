@@ -211,7 +211,12 @@ export function WorktreeCardMetaBadges({
   }
 
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-1" aria-label="Workspace metadata">
+    // Why: inline agent rows reserve this same right inset for their dismiss X,
+    // so the card metadata icons align on the same visual rail.
+    <div
+      className="ml-auto flex shrink-0 items-center gap-1 pr-1.5"
+      aria-label="Workspace metadata"
+    >
       {issue && (
         <MetaIconBadge label={`Linked issue #${issue.number}`}>
           <CircleDot className="text-muted-foreground" />
