@@ -50,6 +50,7 @@ import {
 } from '@/components/browser-pane/browser-focus'
 import { RepoBadgeMark } from '@/components/repo/RepoBadgeLabel'
 import { useSettingsNavigationMetadata } from '@/hooks/useSettingsNavigationMetadata'
+import { runWorktreeDelete } from '@/components/sidebar/delete-worktree-flow'
 import {
   buildCmdJActionResults,
   buildCmdJSettingsResults,
@@ -490,6 +491,16 @@ export default function WorktreeJumpPalette(): React.JSX.Element | null {
     )
   }, [openModal])
 
+  const deleteActiveWorkspaceAction = useCallback(() => {
+    const { activeView, activeWorktreeId } = useAppStore.getState()
+    if (activeView !== 'terminal' || !activeWorktreeId) {
+      return
+    }
+    // Why: the delete confirmation is also a modal; let the palette close
+    // before mounting it so Radix focus teardown cannot fight the new dialog.
+    queueMicrotask(() => runWorktreeDelete(activeWorktreeId))
+  }, [])
+
   const openAddQuickCommandAction = useCallback(() => {
     openSettingsTarget({ pane: 'quick-commands', repoId: null, intent: 'add-quick-command' })
     openSettingsPage()
@@ -504,9 +515,11 @@ export default function WorktreeJumpPalette(): React.JSX.Element | null {
         openNewMarkdownFile: openNewMarkdownInActiveWorkspace,
         openNewTerminalTab: openNewTerminalTabInActiveWorkspace,
         openCreateWorkspace: openCreateWorkspaceAction,
+        deleteActiveWorkspace: deleteActiveWorkspaceAction,
         openAddQuickCommand: openAddQuickCommandAction
       }),
     [
+      deleteActiveWorkspaceAction,
       openAddQuickCommandAction,
       openCreateWorkspaceAction,
       openNewBrowserTabInActiveWorkspace,
