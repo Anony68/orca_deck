@@ -1332,6 +1332,10 @@ function createGitApi(): NonNullable<Partial<PreloadApi>['git']> {
         paths
       })
     },
+    // Why: the "add huge folder to .gitignore" flow is a local-desktop helper;
+    // in the web runtime there's no offer, so return no candidates / no-op.
+    findHugeFoldersToIgnore: async () => [],
+    appendGitignore: async () => false,
     history: async ({ worktreePath, limit, baseRef }) => {
       const worktree = await resolveRuntimeWorktreeByPath(worktreePath)
       return callRuntimeResult('git.history', {

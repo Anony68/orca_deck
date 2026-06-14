@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDownUp,
+  AlertTriangle,
   ArrowUp,
   ChevronDown,
   CloudUpload,
@@ -248,6 +249,11 @@ export function resolveSourceControlBaseRef(input: {
 
 const EMPTY_GIT_STATUS_ENTRIES: GitStatusEntry[] = []
 const EMPTY_BRANCH_CHANGE_ENTRIES: GitBranchChangeEntry[] = []
+
+// Why: the "too many changes — add folder to .gitignore?" warning shows at most
+// once per worktree per session (the analog of a "Don't show again" gate), so a
+// repo that stays huge across polls doesn't re-toast every refresh.
+const hugeRepoWarningDismissed = new Set<string>()
 
 // Why: directional signifiers ahead of each primary action label. Commit
 // (✓) is affirmative; Push (↑) points in the direction data flows; Sync
@@ -636,6 +642,9 @@ function SourceControlInner(): React.JSX.Element {
       ? (s.gitStatusByWorktree[activeWorktreeId] ?? EMPTY_GIT_STATUS_ENTRIES)
       : EMPTY_GIT_STATUS_ENTRIES
   )
+  const repositoryHuge = useAppStore((s) =>
+    activeWorktreeId ? s.gitStatusHugeByWorktree?.[activeWorktreeId] : undefined
+  )
   const branchEntries = useAppStore((s) =>
     activeWorktreeId
       ? (s.gitBranchChangesByWorktree[activeWorktreeId] ?? EMPTY_BRANCH_CHANGE_ENTRIES)
@@ -967,6 +976,56 @@ function SourceControlInner(): React.JSX.Element {
       console.warn('[SourceControl] post-mutation git status refresh failed', error)
     }
   }, [refreshActiveGitStatus])
+
+  // Why: when status is truncated at the entry limit, offer (once per worktree)
+  // to .gitignore the folder most likely flooding it — the usual cause is a
+  // build/dependency dir that should have been ignored. Accepting writes the
+  // .gitignore and refreshes, which clears the huge flag and resumes polling.
+  // Local-only: the SSH huge-folder write path isn't wired, so skip remote.
+  useEffect(() => {
+    if (!repositoryHuge || !activeWorktreeId || !worktreePath || activeConnectionId) {
+      return
+    }
+    if (hugeRepoWarningDismissed.has(activeWorktreeId)) {
+      return
+    }
+    const worktreeId = activeWorktreeId
+    let cancelled = false
+    void window.api.git
+      .findHugeFoldersToIgnore({ worktreePath })
+      .then((folders) => {
+        if (cancelled || folders.length === 0 || hugeRepoWarningDismissed.has(worktreeId)) {
+          return
+        }
+        hugeRepoWarningDismissed.add(worktreeId)
+        const folderName = folders[0]
+        toast.warning(
+          translate(
+            'auto.components.right.sidebar.SourceControl.hugeRepoIgnorePrompt',
+            'This repository has too many active changes. Add "{{value0}}" to .gitignore?',
+            { value0: folderName }
+          ),
+          {
+            action: {
+              label: translate(
+                'auto.components.right.sidebar.SourceControl.hugeRepoIgnoreAction',
+                'Add to .gitignore'
+              ),
+              onClick: () => {
+                void window.api.git
+                  .appendGitignore({ worktreePath, folderName })
+                  .then(() => refreshActiveGitStatus())
+                  .catch((error) => console.warn('[SourceControl] add to .gitignore failed', error))
+              }
+            }
+          }
+        )
+      })
+      .catch((error) => console.warn('[SourceControl] findHugeFoldersToIgnore failed', error))
+    return () => {
+      cancelled = true
+    }
+  }, [repositoryHuge, activeWorktreeId, worktreePath, activeConnectionId, refreshActiveGitStatus])
 
   const refreshGitStatusAfterPullRequestGeneration = useCallback(
     async (context: PullRequestGenerationContext): Promise<void> => {
@@ -3977,6 +4036,12 @@ function SourceControlInner(): React.JSX.Element {
             </div>
           )}
 
+          {repositoryHuge && (
+            <div className="px-3 pb-2">
+              <TooManyChangesBanner limit={repositoryHuge.limit} />
+            </div>
+          )}
+
           {scope === 'all' && showGenericEmptyState && !normalizedFilter ? (
             <EmptyState
               heading="No changes on this branch"
@@ -5919,6 +5984,23 @@ export function OperationBanner({
             : translate('auto.components.right.sidebar.SourceControl.540ca8f78c', 'Abort merge')}
         </Button>
       ) : null}
+    </div>
+  )
+}
+
+export function TooManyChangesBanner({ limit }: { limit: number }): React.JSX.Element {
+  return (
+    <div className="rounded-md border border-amber-500/25 bg-amber-500/5 px-3 py-2">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+        <span className="text-xs text-foreground">
+          {translate(
+            'auto.components.right.sidebar.SourceControl.tooManyChanges',
+            'Too many changes detected. Only the first {{value0}} are shown.',
+            { value0: limit.toLocaleString() }
+          )}
+        </span>
+      </div>
     </div>
   )
 }
