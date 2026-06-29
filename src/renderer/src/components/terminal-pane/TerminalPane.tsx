@@ -929,8 +929,8 @@ export default function TerminalPane({
     persistLayoutSnapshot()
   }, [paneCount, paneTitles, persistLayoutSnapshot, terminalTab])
 
-  const syncPanePtyLayoutBinding = useCallback(
-    (paneId: number, ptyId: string | null): void => {
+  const writePanePtyLayoutBinding = useCallback(
+    (paneId: number, ptyId: string | null, repairActiveLeafOnClear: boolean): void => {
       const existingLayout = useAppStore.getState().terminalLayoutsByTabId[tabId] ?? EMPTY_LAYOUT
       const { ptyIdsByLeafId: _existingPtyIdsByLeafId, ...layoutWithoutPtyBindings } =
         existingLayout
@@ -957,12 +957,34 @@ export default function TerminalPane({
 
       const nextBindings = { ...existingBindings }
       delete nextBindings[leafId]
-      setTabLayout(tabId, {
+      const nextLayout = {
         ...layoutWithoutPtyBindings,
         ...(Object.keys(nextBindings).length > 0 ? { ptyIdsByLeafId: nextBindings } : {})
-      })
+      }
+      if (
+        repairActiveLeafOnClear &&
+        existingLayout.activeLeafId === leafId &&
+        Object.keys(nextBindings).length > 0
+      ) {
+        // Why: an active pane that lost its PTY would keep swallowing input if
+        // sibling bound panes are available; replacement/restart bookkeeping
+        // opts out so focus stays with the pane about to receive a fresh PTY.
+        nextLayout.activeLeafId = resolveTerminalLayoutActiveLeafId({
+          root: nextLayout.root,
+          activeLeafId: nextLayout.activeLeafId,
+          ptyIdsByLeafId: nextBindings
+        })
+      }
+      setTabLayout(tabId, nextLayout)
     },
     [setTabLayout, tabId]
+  )
+
+  const syncPanePtyLayoutBinding = useCallback(
+    (paneId: number, ptyId: string | null): void => {
+      writePanePtyLayoutBinding(paneId, ptyId, false)
+    },
+    [writePanePtyLayoutBinding]
   )
 
   const clearExitedPanePtyLayoutBinding = useCallback(
@@ -1241,11 +1263,13 @@ export default function TerminalPane({
       persistLayoutSnapshot()
     }
 
-    if (restoredLayout.activeLeafId) {
-      const activePaneId = manager.getNumericIdForLeaf(restoredLayout.activeLeafId)
-      if (activePaneId !== null) {
-        manager.setActivePane(activePaneId, { focus: isActive })
-      }
+    const activePaneId = restoredLayout.activeLeafId
+      ? manager.getNumericIdForLeaf(restoredLayout.activeLeafId)
+      : null
+    const fallbackActivePaneId = manager.getActivePane()?.id ?? manager.getPanes()[0]?.id ?? null
+    const nextActivePaneId = activePaneId ?? fallbackActivePaneId
+    if (nextActivePaneId !== null) {
+      manager.setActivePane(nextActivePaneId, { focus: isActive })
     }
   }, [isActive, paneCount, persistLayoutSnapshot, restoredLayout])
 
@@ -1391,6 +1415,7 @@ export default function TerminalPane({
     },
     [
       clearCodexRestartNotice,
+      clearExitedPanePtyLayoutBinding,
       clearRuntimePaneTitle,
       clearTabPtyId,
       cwd,
@@ -1406,7 +1431,6 @@ export default function TerminalPane({
       setCacheTimerStartedAt,
       setRuntimePaneTitle,
       suppressPtyExit,
-      clearExitedPanePtyLayoutBinding,
       syncPanePtyLayoutBinding,
       tabId,
       updateTabPtyId,

@@ -1314,6 +1314,35 @@ export function connectPanePty(
     }))
   })
 
+  const focusSurvivingPtyPaneAfterKeptExit = (): void => {
+    if (manager.getActivePane()?.id !== pane.id) {
+      return
+    }
+    const hasPtyBinding = (paneId: number): boolean =>
+      Boolean(deps.paneTransportsRef.current.get(paneId)?.getPtyId())
+    const repairedActiveLeafId =
+      useAppStore.getState().terminalLayoutsByTabId[deps.tabId]?.activeLeafId ?? null
+    const repairedActivePaneId = repairedActiveLeafId
+      ? manager.getNumericIdForLeaf(repairedActiveLeafId)
+      : null
+    const targetPaneId =
+      repairedActivePaneId !== null &&
+      repairedActivePaneId !== pane.id &&
+      hasPtyBinding(repairedActivePaneId)
+        ? repairedActivePaneId
+        : (manager
+            .getPanes()
+            .find((candidate) => candidate.id !== pane.id && hasPtyBinding(candidate.id))?.id ??
+          null)
+    if (targetPaneId !== null) {
+      // Why: when a newborn split PTY dies before output/input, the pane stays
+      // mounted for diagnostics; move live focus to the sibling that still owns a PTY.
+      manager.setActivePane(targetPaneId, {
+        focus: deps.isActiveRef.current && deps.isVisibleRef.current
+      })
+    }
+  }
+
   // Why: the transport's own exit handler (pty-transport.ts) normally makes
   // onExit run-at-most-once by clearing connected/ptyId + unregistering BEFORE
   // calling it. reconcileIfSessionDead drives onExit directly (bypassing that),
@@ -1325,6 +1354,16 @@ export function connectPanePty(
   let handledExitPtyId: string | null = null
   const onExit = (ptyId: string): void => {
     if (handledExitPtyId === ptyId) {
+      return
+    }
+    const currentPaneTransport = deps.paneTransportsRef.current.get(pane.id)
+    if (currentPaneTransport && currentPaneTransport !== transport) {
+      // Why: an old transport can deliver a late exit after this pane has
+      // rebound to a replacement PTY; only clear ownership for the exited id.
+      handledExitPtyId = ptyId
+      deps.clearTabPtyId(deps.tabId, ptyId)
+      deps.consumeSuppressedPtyExit(ptyId)
+      scheduleRuntimeGraphSync()
       return
     }
     handledExitPtyId = ptyId
@@ -1371,6 +1410,7 @@ export function connectPanePty(
     ) {
       // Why: a freshly split pane can lose its newborn PTY during setup; keep
       // the split visible so the failed session does not immediately collapse.
+      focusSurvivingPtyPaneAfterKeptExit()
       return
     }
     manager.closePane(pane.id)
