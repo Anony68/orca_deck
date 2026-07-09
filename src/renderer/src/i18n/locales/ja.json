@@ -247,7 +247,9 @@
           "a8e4b3af5b": "プロジェクトはすでに追加されています",
           "6d3318e813": "repos のインポートに失敗しました",
           "3be0f7df04": "選択したランタイムでフォルダーを開けません",
-          "15cf5319ec": "{{path}} は {{hostName}} でチェックされましたが、そのホストは使用可能なフォルダーを報告しませんでした。"
+          "15cf5319ec": "{{path}} は {{hostName}} でチェックされましたが、そのホストは使用可能なフォルダーを報告しませんでした。",
+          "2dcd706774": "プロジェクトは別のプロファイルにも存在します",
+          "presenceProfileOverflow": "{{names}} 他 {{count}} 件"
         },
         "settings": {
           "e12dab333b": "サーバーの切り替えに失敗しました",
@@ -262,6 +264,24 @@
         },
         "linear": {
           "37d36984d0": "Linear 接続は新しいリクエストに置き換えられました。"
+        },
+        "orca": {
+          "profiles": {
+            "612f7f6861": "プロファイルの作成に失敗しました",
+            "319d7cf39b": "クラウド プロファイルが作成されました",
+            "d6e764e7db": "このプロファイルを再接続してください",
+            "f0c9e11a6d": "クラウド プロファイルの作成に失敗しました",
+            "8b8fa73174": "Orca Cloud のサインインが構成されていません",
+            "33290e88ed": "プロファイルの接続に失敗しました",
+            "9fcb07a796": "プロファイルが接続されました",
+            "2f6c78a039": "プロファイル認証の更新に失敗しました",
+            "a37b5e6d37": "プロファイルからサインアウトしました",
+            "83600521e7": "サインアウトに失敗しました",
+            "76deec8f58": "組織の切り替えに失敗しました",
+            "7d4bc516ee": "プロファイルの切り替えに失敗しました",
+            "f518e89aa5": "プロジェクトはそのプロファイルに既に存在します",
+            "f03ae7f27b": "プロジェクトの転送に失敗しました"
+          }
         }
       }
     },
@@ -8747,7 +8767,14 @@
           "behindBaseRefToastDescription": "インラインの設定リンクとフッターアクション付きの永続プロンプト。",
           "notificationPlayground": "Notification playground",
           "notificationPlaygroundDescription": "Dev-only triggers for checking toast layout, recovery actions, and long-copy wrapping.",
-          "devOnly": "Dev only"
+          "devOnly": "Dev only",
+          "orcaCloud": "Orca Cloud",
+          "orcaCloudDescription": "Dev-only preview of first-party cloud sign-in. Hidden in production; in dev it also appears in the sidebar account switcher once ORCA_CLOUD_API_URL and ORCA_CLOUD_CLIENT_ID are set.",
+          "orcaCloudStatus": "Status",
+          "orcaCloudSignOut": "Sign out",
+          "orcaCloudConnect": "Connect profile",
+          "orcaCloudRefresh": "Refresh status",
+          "orcaCloudNotConfigured": "Set ORCA_CLOUD_API_URL and ORCA_CLOUD_CLIENT_ID to preview Orca Cloud sign-in in this dev build."
         },
         "EphemeralVmRecipeRow": {
           "useInWorkspace": "ワークスペースでの使用"
@@ -12491,6 +12518,158 @@
       "nativeChat": {
         "contextMenu": {
           "copy": "コピー"
+        }
+      },
+      "orca": {
+        "profiles": {
+          "switcher": {
+            "cloud": {
+              "unavailable": "クラウド サインインは利用できません"
+            },
+            "reconnect": "プロファイルを再接続",
+            "connect": "プロファイルを接続",
+            "organization": "組織",
+            "create": {
+              "profile": {
+                "for": {
+                  "org": "組織用のプロファイルを作成"
+                }
+              }
+            },
+            "signout": "サインアウト",
+            "16e3681072": "新しいローカル プロファイル",
+            "e3b91a3d90": "プロジェクトとワークツリーを分けるための空のプロファイルを作成します。",
+            "f322e1f4d6": "プロファイル名",
+            "cfa59f8ad1": "作成して切り替え",
+            "b4f9d1125d": "ローカル",
+            "4815f7d163": "プロファイルを切り替え",
+            "d00d853e2a": "プロファイルを管理",
+            "c106c674fe": "新しいローカル プロファイル",
+            "account": "アカウント",
+            "org": {
+              "members": "組織のメンバー"
+            }
+          },
+          "management": {
+            "04e7bd2a23": "転送",
+            "128c7dfe64": "コピー先",
+            "df8b7d876b": "移動先",
+            "9aa26347b3": "プロジェクトを移動しました",
+            "816ce624b6": "プロジェクトをコピーしました",
+            "2c45bda8d3": "プロファイルを管理",
+            "2db945e4a0": "アクティブなプロファイルから別のローカル プロファイルへプロジェクトをコピーまたは移動します。",
+            "8668cb2946": "このプロファイルにはプロジェクトがありません。",
+            "93034915ab": "プロジェクトをコピーする前に、別のプロファイルを作成してください。",
+            "projectCountSingular": "{{count}} 件のプロジェクト",
+            "projectCountPlural": "{{count}} 件のプロジェクト"
+          },
+          "project": {
+            "transfer": {
+              "confirm": {
+                "move": {
+                  "title": "プロジェクトを移動しますか？",
+                  "description": "{{repoName}} を {{targetName}} に移動します。Orca は {{activeProfileName}} から削除し、ファイルはそのまま残して {{targetName}} で再起動します。",
+                  "action": "プロジェクトを移動"
+                },
+                "copy": {
+                  "title": "プロジェクトをコピーしますか？",
+                  "description": "{{repoName}} を {{targetName}} にコピーします。両方のプロファイルは同じファイルを参照し、Orca のメタデータは別々に保持されます。",
+                  "action": "プロジェクトをコピー"
+                },
+                "live": {
+                  "work": "このプロジェクトで実行中の作業"
+                },
+                "cancel": "キャンセル",
+                "terminalSingular": "{{count}} 個の実行中ターミナル タブ",
+                "terminalPlural": "{{count}} 個の実行中ターミナル タブ",
+                "agentSingular": "{{count}} 個のアクティブなエージェント",
+                "agentPlural": "{{count}} 個のアクティブなエージェント",
+                "browserSingular": "{{count}} 個のブラウザ ワークスペース",
+                "browserPlural": "{{count}} 個のブラウザ ワークスペース"
+              }
+            }
+          },
+          "signout": {
+            "confirm": {
+              "title": "サインアウトしますか？",
+              "description": "{{profileName}} からサインアウトし、そのプロジェクト、ワークツリー、ローカル メタデータはこのデバイスに保持します。",
+              "cancel": "キャンセル",
+              "action": "サインアウト"
+            }
+          },
+          "switch": {
+            "confirm": {
+              "target": "選択したプロファイル",
+              "title": "プロファイルを切り替えますか？",
+              "description": "{{targetName}} に切り替えると、Orca が再起動し、{{activeProfileName}} のワークスペースが再読み込みされます。",
+              "live": {
+                "work": "このプロファイルで実行中の作業"
+              },
+              "cancel": "キャンセル",
+              "switch": "プロファイルを切り替え",
+              "terminalSingular": "{{count}} 個の実行中ターミナル タブ",
+              "terminalPlural": "{{count}} 個の実行中ターミナル タブ",
+              "agentSingular": "{{count}} 個のアクティブなエージェント",
+              "agentPlural": "{{count}} 個のアクティブなエージェント",
+              "browserSingular": "{{count}} 個のブラウザ ワークスペース",
+              "browserPlural": "{{count}} 個のブラウザ ワークスペース"
+            }
+          },
+          "org": {
+            "members": {
+              "role": {
+                "label": "ロール",
+                "owner": "オーナー",
+                "admin": "管理者",
+                "member": "メンバー"
+              },
+              "not": {
+                "signed": {
+                  "in": "まだ Orca にサインインしていません。"
+                }
+              },
+              "remove": {
+                "confirm": "削除",
+                "cancel": "キャンセル",
+                "label": "メンバーを削除"
+              },
+              "title": "組織のメンバー",
+              "load": {
+                "error": "組織のメンバーを読み込めませんでした。"
+              },
+              "retry": "再試行",
+              "pending": {
+                "title": "保留中の招待",
+                "revoke": "取り消す"
+              },
+              "invite": {
+                "title": "招待",
+                "placeholder": "teammate@example.com",
+                "role": "招待するロール",
+                "submit": "送信"
+              },
+              "error": {
+                "forbidden": "あなたのロールではこの操作を実行できません。",
+                "conflict": "すでにメンバーまたは招待済みです。",
+                "remove": {
+                  "self": "自分自身を削除することはできません。"
+                },
+                "own": {
+                  "role": "自分のロールは変更できません。"
+                },
+                "not": {
+                  "found": "そのメンバーはこの組織に存在しません。"
+                },
+                "reconnect": "メンバーを管理するにはプロファイルを再接続してください。",
+                "unconfigured": "このビルドでは組織の管理を利用できません。",
+                "failed": "問題が発生しました。もう一度お試しください。"
+              },
+              "subtitle": {
+                "named": "{{orgName}} で Orca を共同利用できるメンバーです。",
+                "default": "組織内で Orca を共同利用できるメンバーです。"
+              }
+            }
+          }
         }
       }
     },

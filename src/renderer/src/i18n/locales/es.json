@@ -247,7 +247,9 @@
           "a8e4b3af5b": "Proyecto ya agregado",
           "6d3318e813": "No se pudieron importar repositorios",
           "3be0f7df04": "No se puede abrir la carpeta en el host seleccionado",
-          "15cf5319ec": "{{path}} se verificó en {{hostName}}, pero ese host no reportó ninguna carpeta utilizable."
+          "15cf5319ec": "{{path}} se verificó en {{hostName}}, pero ese host no reportó ninguna carpeta utilizable.",
+          "2dcd706774": "Project also exists in another profile",
+          "presenceProfileOverflow": "{{names}} +{{count}} more"
         },
         "settings": {
           "e12dab333b": "No se pudo cambiar de servidor",
@@ -262,6 +264,24 @@
         },
         "linear": {
           "37d36984d0": "La conexión de Linear fue reemplazada por una solicitud más reciente."
+        },
+        "orca": {
+          "profiles": {
+            "612f7f6861": "Failed to create profile",
+            "319d7cf39b": "Cloud profile created",
+            "d6e764e7db": "Reconnect this profile",
+            "f0c9e11a6d": "Failed to create cloud profile",
+            "8b8fa73174": "Orca Cloud sign-in is not configured",
+            "33290e88ed": "Failed to connect profile",
+            "9fcb07a796": "Profile connected",
+            "2f6c78a039": "Failed to refresh profile auth",
+            "a37b5e6d37": "Signed out of profile",
+            "83600521e7": "Failed to sign out",
+            "76deec8f58": "Failed to switch organization",
+            "7d4bc516ee": "Failed to switch profile",
+            "f518e89aa5": "Project already exists in that profile",
+            "f03ae7f27b": "Failed to transfer project"
+          }
         }
       }
     },
@@ -8747,7 +8767,14 @@
           "behindBaseRefToastDescription": "Aviso persistente con un enlace a Ajustes y una acción en el pie.",
           "notificationPlayground": "Panel de prueba de notificaciones",
           "notificationPlaygroundDescription": "Disparadores solo para desarrollo para comprobar el diseño de toasts, acciones de recuperación y ajuste de texto largo.",
-          "devOnly": "Solo para desarrollo"
+          "devOnly": "Solo para desarrollo",
+          "orcaCloud": "Orca Cloud",
+          "orcaCloudDescription": "Dev-only preview of first-party cloud sign-in. Hidden in production; in dev it also appears in the sidebar account switcher once ORCA_CLOUD_API_URL and ORCA_CLOUD_CLIENT_ID are set.",
+          "orcaCloudStatus": "Status",
+          "orcaCloudSignOut": "Sign out",
+          "orcaCloudConnect": "Connect profile",
+          "orcaCloudRefresh": "Refresh status",
+          "orcaCloudNotConfigured": "Set ORCA_CLOUD_API_URL and ORCA_CLOUD_CLIENT_ID to preview Orca Cloud sign-in in this dev build."
         },
         "EphemeralVmRecipeRow": {
           "useInWorkspace": "Usar en el espacio de trabajo"
@@ -12491,6 +12518,158 @@
       "nativeChat": {
         "contextMenu": {
           "copy": "Copiar"
+        }
+      },
+      "orca": {
+        "profiles": {
+          "switcher": {
+            "cloud": {
+              "unavailable": "Cloud sign-in unavailable"
+            },
+            "account": "Account",
+            "reconnect": "Reconnect profile",
+            "connect": "Connect profile",
+            "organization": "Organization",
+            "create": {
+              "profile": {
+                "for": {
+                  "org": "Create profile for org"
+                }
+              }
+            },
+            "signout": "Sign out",
+            "16e3681072": "New local profile",
+            "e3b91a3d90": "Create an empty profile for separate projects and worktrees.",
+            "f322e1f4d6": "Profile name",
+            "cfa59f8ad1": "Create and Switch",
+            "b4f9d1125d": "Local",
+            "4815f7d163": "Switch profile",
+            "d00d853e2a": "Manage profiles",
+            "c106c674fe": "New local profile",
+            "org": {
+              "members": "Organization members"
+            }
+          },
+          "management": {
+            "04e7bd2a23": "Transfer",
+            "128c7dfe64": "Copy to",
+            "df8b7d876b": "Move to",
+            "9aa26347b3": "Project moved",
+            "816ce624b6": "Project copied",
+            "2c45bda8d3": "Manage profiles",
+            "2db945e4a0": "Copy or move projects from the active profile to another local profile.",
+            "8668cb2946": "No projects in this profile.",
+            "93034915ab": "Create another profile before copying projects.",
+            "projectCountSingular": "{{count}} project",
+            "projectCountPlural": "{{count}} projects"
+          },
+          "project": {
+            "transfer": {
+              "confirm": {
+                "move": {
+                  "title": "Move project?",
+                  "description": "Move {{repoName}} to {{targetName}}. Orca removes it from {{activeProfileName}}, keeps files in place, and relaunches into {{targetName}}.",
+                  "action": "Move project"
+                },
+                "copy": {
+                  "title": "Copy project?",
+                  "description": "Copy {{repoName}} to {{targetName}}. Both profiles will point at the same files with separate Orca metadata.",
+                  "action": "Copy project"
+                },
+                "live": {
+                  "work": "Live work in this project"
+                },
+                "cancel": "Cancel",
+                "terminalSingular": "{{count}} live terminal tab",
+                "terminalPlural": "{{count}} live terminal tabs",
+                "agentSingular": "{{count}} active agent",
+                "agentPlural": "{{count}} active agents",
+                "browserSingular": "{{count}} browser workspace",
+                "browserPlural": "{{count}} browser workspaces"
+              }
+            }
+          },
+          "signout": {
+            "confirm": {
+              "title": "Sign out?",
+              "description": "Sign out of {{profileName}} and keep its projects, worktrees, and local metadata on this device.",
+              "cancel": "Cancel",
+              "action": "Sign out"
+            }
+          },
+          "switch": {
+            "confirm": {
+              "target": "the selected profile",
+              "title": "Switch profiles?",
+              "description": "Switching to {{targetName}} will relaunch Orca and reload the workspace for {{activeProfileName}}.",
+              "live": {
+                "work": "Live work in this profile"
+              },
+              "cancel": "Cancel",
+              "switch": "Switch profile",
+              "terminalSingular": "{{count}} live terminal tab",
+              "terminalPlural": "{{count}} live terminal tabs",
+              "agentSingular": "{{count}} active agent",
+              "agentPlural": "{{count}} active agents",
+              "browserSingular": "{{count}} browser workspace",
+              "browserPlural": "{{count}} browser workspaces"
+            }
+          },
+          "org": {
+            "members": {
+              "role": {
+                "label": "Role",
+                "owner": "Owner",
+                "admin": "Admin",
+                "member": "Member"
+              },
+              "not": {
+                "signed": {
+                  "in": "They haven't signed in to Orca yet."
+                }
+              },
+              "remove": {
+                "confirm": "Remove",
+                "cancel": "Cancel",
+                "label": "Remove teammate"
+              },
+              "title": "Organization members",
+              "load": {
+                "error": "Couldn't load organization members."
+              },
+              "retry": "Try again",
+              "pending": {
+                "title": "Pending invites",
+                "revoke": "Revoke"
+              },
+              "invite": {
+                "title": "Invite",
+                "placeholder": "teammate@example.com",
+                "role": "Invite role",
+                "submit": "Send"
+              },
+              "error": {
+                "forbidden": "Your role can't do that.",
+                "conflict": "Already a member or invited.",
+                "remove": {
+                  "self": "You can't remove yourself."
+                },
+                "own": {
+                  "role": "You can't change your own role."
+                },
+                "not": {
+                  "found": "That teammate is no longer in this organization."
+                },
+                "reconnect": "Reconnect your profile to manage members.",
+                "unconfigured": "Organization management is unavailable in this build.",
+                "failed": "Something went wrong. Please try again."
+              },
+              "subtitle": {
+                "named": "People in {{orgName}} who can collaborate on Orca.",
+                "default": "People in your organization who can collaborate on Orca."
+              }
+            }
+          }
         }
       }
     },

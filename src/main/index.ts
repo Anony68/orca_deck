@@ -14,6 +14,7 @@ import {
   getCanonicalUserDataPath,
   migrateMobilePairingDataToCanonicalUserDataPath
 } from './persistence'
+import { ensureActiveOrcaProfile, initOrcaProfilePaths } from './orca-profiles/profile-index-store'
 import { applyAppIcon } from './app-icon'
 import { StatsCollector, initStatsPath } from './stats/collector'
 import { ClaudeUsageStore, initClaudeUsagePath } from './claude-usage/store'
@@ -582,6 +583,7 @@ if (hasSingleInstanceLock) {
   // orca-dev in dev mode) but before app.setName('Orca') inside whenReady
   // (which would change the resolved path on case-sensitive filesystems).
   initDataPath()
+  initOrcaProfilePaths()
   // Why: same timing constraint as initDataPath — capture the userData path
   // before app.setName changes it. See persistence.ts:20-28.
   initStatsPath()
@@ -1646,7 +1648,8 @@ app.whenReady().then(async () => {
   electronApp.setAppUserModelId(devInstanceIdentity.appUserModelId)
   app.setName(devInstanceIdentity.name)
 
-  store = new Store()
+  const activeOrcaProfile = ensureActiveOrcaProfile()
+  store = new Store({ dataFile: activeOrcaProfile.dataFile })
   logStartupMilestone('store-loaded')
   // Why: must run before ClaudeRuntimeAuthService's constructor sync — a Claude
   // CLI that survived the restart inside the daemon still holds the current
@@ -1674,7 +1677,10 @@ app.whenReady().then(async () => {
   }
   // Why: browser sessions are used by desktop webviews and runtime profile
   // commands, so initialize them at app startup instead of a renderer IPC path.
-  initializeBrowserSessionsForApp()
+  initializeBrowserSessionsForApp({
+    orcaProfileId: activeOrcaProfile.profile.id,
+    profileDirectory: activeOrcaProfile.profileDirectory
+  })
   unsubscribeSystemResumeBroadcast = registerSystemResumeBroadcast()
   agentAwakeService = new AgentAwakeService()
   agentAwakeService.setEnabled(store.getSettings().keepComputerAwakeWhileAgentsRun)
