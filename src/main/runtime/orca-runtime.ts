@@ -685,6 +685,10 @@ import { closeLocalWatcherForWorktreePath } from '../ipc/filesystem-watcher'
 import { HeadlessEmulator, type HeadlessEmulatorOptions } from '../daemon/headless-emulator'
 import { killAllProcessesForWorktree } from './worktree-teardown'
 import { MOBILE_SUBSCRIBE_SCROLLBACK_ROWS } from './scrollback-limits'
+import {
+  createMobileSessionTabsNotifyCoalescer,
+  type MobileSessionTabsNotifyCoalescer
+} from './mobile-session-tabs-notify-coalescer'
 import type { IFilesystemProvider, IPtyProvider, PtyProcessInfo } from '../providers/types'
 import { getSshFilesystemProvider } from '../providers/ssh-filesystem-dispatch'
 import {
@@ -2060,6 +2064,13 @@ export class OrcaRuntimeService {
     { activate: boolean; selectIfNoActiveTab: boolean }
   >()
   private mobileSessionTabListeners = new Set<(snapshot: RuntimeMobileSessionTabsResult) => void>()
+  // Why: coalesces title/status-driven session.tabs emits so spinner churn
+  // doesn't fan out (and per-client JSON.stringify) a snapshot several times a
+  // second. Emit reads the latest snapshot, so only the freshest version ships.
+  private readonly mobileSessionTabsNotifyCoalescer: MobileSessionTabsNotifyCoalescer =
+    createMobileSessionTabsNotifyCoalescer((worktreeId) =>
+      this.notifyMobileSessionTabsChangedNow(worktreeId)
+    )
   private leaves = new Map<string, RuntimeLeafRecord>()
   // Why: PTY output is a per-keystroke hot path. Looking up affected leaves by
   // ptyId keeps active TUI redraws independent of the total open terminal count.
@@ -3532,7 +3543,10 @@ export class OrcaRuntimeService {
     this.notifyMobileSessionTabsChanged(worktreeId)
   }
 
-  private touchMobileSessionSnapshotsForPty(ptyId: string): void {
+  private touchMobileSessionSnapshotsForPty(
+    ptyId: string,
+    options: { immediate?: boolean } = {}
+  ): void {
     for (const [worktreeId, snapshot] of this.mobileSessionTabsByWorktree) {
       const hasPtyBackedTab = snapshot.tabs.some(
         (tab) =>
@@ -3546,7 +3560,15 @@ export class OrcaRuntimeService {
         ...snapshot,
         snapshotVersion: snapshot.snapshotVersion + 1
       })
-      this.notifyMobileSessionTabsChanged(worktreeId)
+      if (options.immediate) {
+        // Why: readiness/lifecycle changes are structural and must not wait
+        // behind the title/status coalescing window.
+        this.notifyMobileSessionTabsChanged(worktreeId)
+      } else {
+        // Why: title/status flips several times a second under spinner-in-title
+        // agents. Coalesce the emit instead of fanning out every version.
+        this.mobileSessionTabsNotifyCoalescer.schedule(worktreeId)
+      }
     }
   }
 
@@ -5208,6 +5230,9 @@ export class OrcaRuntimeService {
   ): () => void {
     this.mobileSessionTabListeners.add(listener)
     return () => {
+      // Why: flush pending coalesced notifies before dropping this listener so a
+      // subscriber closing mid-window still receives the latest settled state.
+      this.mobileSessionTabsNotifyCoalescer.flushAll()
       this.mobileSessionTabListeners.delete(listener)
     }
   }
@@ -7240,7 +7265,7 @@ export class OrcaRuntimeService {
       pty.lastExitCode = exitCode
       this.resolvePtyExitWaiters(pty, ptyId)
       this.pruneDisconnectedPtyTranscript(pty)
-      this.touchMobileSessionSnapshotsForPty(ptyId)
+      this.touchMobileSessionSnapshotsForPty(ptyId, { immediate: true })
     }
 
     for (const leaf of this.getLeavesForPty(ptyId)) {
@@ -18884,6 +18909,9 @@ export class OrcaRuntimeService {
           nextWorktrees.add(worktreeId)
         } else {
           this.mobileSessionTabsByWorktree.delete(worktreeId)
+          // Why: drop any pending coalesced notify so a stale snapshot can't
+          // land after the removed frame.
+          this.mobileSessionTabsNotifyCoalescer.cancel(worktreeId)
           this.notifyMobileSessionTabsRemoved(worktreeId)
         }
       }
@@ -19058,6 +19086,14 @@ export class OrcaRuntimeService {
       this.notifyMobileSessionTabSnapshots()
       return
     }
+    // Why: structural changes (tab add/remove/activate) must propagate promptly,
+    // so cancel any pending coalesced title/status notify — this immediate emit
+    // already reflects the latest snapshot and supersedes it.
+    this.mobileSessionTabsNotifyCoalescer.cancel(worktreeId)
+    this.notifyMobileSessionTabsChangedNow(worktreeId)
+  }
+
+  private notifyMobileSessionTabsChangedNow(worktreeId: string): void {
     if (this.mobileSessionTabListeners.size === 0) {
       return
     }
