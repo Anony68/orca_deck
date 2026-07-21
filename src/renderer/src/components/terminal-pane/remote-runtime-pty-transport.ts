@@ -173,7 +173,9 @@ export function createRemoteRuntimePtyTransport(
     const activated = await callRuntime<RuntimeMobileSessionTabsResult>('session.tabs.activate', {
       worktree,
       tabId: hostTabId,
-      ...(leafId ? { leafId } : {})
+      ...(leafId ? { leafId } : {}),
+      notifyClients: false,
+      navigation: 'caller'
     })
     const immediate = findReadyHostSessionHandle(activated, hostTabId)
     if (immediate) {

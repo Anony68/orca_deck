@@ -1270,7 +1270,13 @@ describe('createRemoteRuntimePtyTransport', () => {
     expect(runtimeCall).toHaveBeenCalledWith(
       expect.objectContaining({
         method: 'session.tabs.activate',
-        params: { worktree: 'id:wt-1', tabId: 'host-tab-1', leafId: 'leaf-1' }
+        params: {
+          worktree: 'id:wt-1',
+          tabId: 'host-tab-1',
+          leafId: 'leaf-1',
+          notifyClients: false,
+          navigation: 'caller'
+        }
       })
     )
     expect(runtimeCall).not.toHaveBeenCalledWith(
@@ -1372,7 +1378,13 @@ describe('createRemoteRuntimePtyTransport', () => {
     expect(runtimeCall).toHaveBeenCalledWith(
       expect.objectContaining({
         method: 'session.tabs.activate',
-        params: { worktree: 'id:wt-1', tabId: 'host-tab-1', leafId: 'leaf-2' }
+        params: {
+          worktree: 'id:wt-1',
+          tabId: 'host-tab-1',
+          leafId: 'leaf-2',
+          notifyClients: false,
+          navigation: 'caller'
+        }
       })
     )
     expect(runtimeCall).not.toHaveBeenCalledWith(

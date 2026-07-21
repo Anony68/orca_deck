@@ -632,8 +632,7 @@ export function HostScreen({
         router.push(target)
         return
       }
-      const targetPath = target.split('?')[0] ?? target
-      if (pathname === targetPath) {
+      if (pathname === (target.split('?')[0] ?? target)) {
         return
       }
       if (pathname === `/h/${hostId}`) {
@@ -649,11 +648,11 @@ export function HostScreen({
     (item: Worktree) => {
       setOptimisticActiveWorktreeId(item.worktreeId)
       if (client && connState === 'connected') {
-        // Why: notifyClients:false hydrates host tabs without pulling desktop into this worktree.
         void client
           .sendRequest('worktree.activate', {
             worktree: `id:${item.worktreeId}`,
-            notifyClients: false
+            notifyClients: false,
+            navigation: 'caller'
           })
           .catch(() => null)
       }
