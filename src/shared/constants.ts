@@ -237,6 +237,7 @@ export function getDefaultSettings(homedir: string): GlobalSettings {
     terminalWindowsPowerShellImplementation: 'auto',
     terminalMouseHideWhileTyping: false,
     terminalQuickCommands: getDefaultTerminalQuickCommands(),
+    terminalQuickCommandsClaudePresetsSeeded: true,
     // Why: opt-in only, matching Ghostty's default (upgrades never enable it unexpectedly).
     terminalFocusFollowsMouse: false,
     windowBackgroundBlur: false,

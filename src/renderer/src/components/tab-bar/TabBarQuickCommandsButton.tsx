@@ -12,7 +12,7 @@ import {
 } from '../../../../shared/terminal-quick-commands'
 import { getRepoIdFromWorktreeId } from '../../../../shared/worktree-id'
 import { FLOATING_TERMINAL_WORKTREE_ID } from '../../../../shared/constants'
-import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
+import { runTerminalQuickCommand } from '@/lib/run-terminal-quick-command'
 import type { TerminalQuickCommand } from '../../../../shared/types'
 import { useConfirmationDialog } from '@/components/confirmation-dialog'
 import { translate } from '@/i18n/i18n'
@@ -125,7 +125,7 @@ export function TabBarQuickCommandsButton({
   }
 
   const handleRun = (command: TerminalQuickCommand): void => {
-    runQuickCommandInNewTab({ command, worktreeId, groupId })
+    runTerminalQuickCommand({ command, worktreeId, groupId })
   }
 
   // Why: hidden in folder-mode worktrees (no repoId) and floating terminals.

@@ -7,20 +7,66 @@ import {
   getTerminalQuickCommandBody,
   getDefaultTerminalQuickCommands,
   isTerminalQuickCommandComplete,
+  MAX_QUICK_COMMANDS,
   normalizeTerminalQuickCommands,
-  parseNormalizedTerminalQuickCommands,
+  seedDefaultTerminalQuickCommands,
   supportsTerminalAgentQuickCommand,
   terminalQuickCommandMatchesRepo
 } from './terminal-quick-commands'
+import { parseNormalizedTerminalQuickCommands } from './terminal-quick-command-sync-parse'
+
+const CLAUDE_PRESET_IDS = [
+  'claude-preset-run',
+  'claude-preset-continue',
+  'claude-preset-resume',
+  'claude-preset-skip-permissions',
+  'claude-preset-update'
+]
 
 describe('terminal quick commands', () => {
-  it('returns safe defaults when persisted settings are missing', () => {
-    expect(normalizeTerminalQuickCommands(undefined)).toEqual([])
-    expect(getDefaultTerminalQuickCommands()).toEqual([])
+  it('returns the Claude presets when persisted settings are missing', () => {
+    const defaults = getDefaultTerminalQuickCommands()
+    expect(defaults.map((command) => command.id)).toEqual(CLAUDE_PRESET_IDS)
+    expect(normalizeTerminalQuickCommands(undefined)).toEqual(defaults)
+    // Why: presets must survive normalization byte-for-byte or full-list sync payloads get rejected.
+    expect(parseNormalizedTerminalQuickCommands(defaults)).toEqual(defaults)
   })
 
   it('keeps an intentionally empty command list', () => {
     expect(normalizeTerminalQuickCommands([])).toEqual([])
+  })
+
+  it('seeds missing Claude presets after existing commands', () => {
+    const mine = {
+      id: 'mine',
+      label: 'Mine',
+      action: 'terminal-command' as const,
+      command: 'pwd',
+      appendEnter: true,
+      scope: { type: 'global' as const }
+    }
+    const seeded = seedDefaultTerminalQuickCommands([mine])
+    expect(seeded.map((command) => command.id)).toEqual(['mine', ...CLAUDE_PRESET_IDS])
+  })
+
+  it('does not duplicate presets already present when seeding', () => {
+    const existing = getDefaultTerminalQuickCommands().slice(0, 2)
+    const seeded = seedDefaultTerminalQuickCommands(existing)
+    expect(seeded.map((command) => command.id)).toEqual(CLAUDE_PRESET_IDS)
+  })
+
+  it('stops seeding at the quick-command cap', () => {
+    const full = Array.from({ length: MAX_QUICK_COMMANDS - 1 }, (_, index) => ({
+      id: `user-${index}`,
+      label: `User ${index}`,
+      action: 'terminal-command' as const,
+      command: 'pwd',
+      appendEnter: true,
+      scope: { type: 'global' as const }
+    }))
+    const seeded = seedDefaultTerminalQuickCommands(full)
+    expect(seeded).toHaveLength(MAX_QUICK_COMMANDS)
+    expect(seeded.at(-1)?.id).toBe(CLAUDE_PRESET_IDS[0])
   })
 
   it('removes quick commands from the abandoned preset rollout', () => {
@@ -225,6 +271,31 @@ describe('terminal quick commands', () => {
     expect(parseNormalizedTerminalQuickCommands([{ ...canonical[0], command: 42 }])).toBeNull()
     expect(
       parseNormalizedTerminalQuickCommands([...canonical, ...canonical.slice(0, 1)])
+    ).toBeNull()
+  })
+
+  it('keeps runInActiveTab only when explicitly true', () => {
+    const normalized = normalizeTerminalQuickCommands([
+      { id: 'here', label: 'Here', command: 'pwd', appendEnter: true, runInActiveTab: true },
+      { id: 'new-tab', label: 'New tab', command: 'pwd', appendEnter: true, runInActiveTab: false },
+      { id: 'junk', label: 'Junk', command: 'pwd', appendEnter: true, runInActiveTab: 'yes' }
+    ])
+
+    expect(normalized[0]).toMatchObject({ id: 'here', runInActiveTab: true })
+    // Why: absent-or-true keeps legacy 6-key commands byte-identical for
+    // full-list sync clients built before the field existed.
+    expect(Object.hasOwn(normalized[1]!, 'runInActiveTab')).toBe(false)
+    expect(Object.hasOwn(normalized[2]!, 'runInActiveTab')).toBe(false)
+  })
+
+  it('round-trips runInActiveTab commands and rejects explicit false at protocol boundaries', () => {
+    const canonical = normalizeTerminalQuickCommands([
+      { id: 'here', label: 'Here', command: 'pwd', appendEnter: true, runInActiveTab: true }
+    ])
+
+    expect(parseNormalizedTerminalQuickCommands(canonical)).toEqual(canonical)
+    expect(
+      parseNormalizedTerminalQuickCommands([{ ...canonical[0], runInActiveTab: false }])
     ).toBeNull()
   })
 

@@ -1,6 +1,8 @@
 import type { TerminalPaneSplitSource } from '../../../shared/feature-education-telemetry'
+import type { TerminalQuickCommand } from '../../../shared/types'
 
 export const TOGGLE_TERMINAL_PANE_EXPAND_EVENT = 'orca-toggle-terminal-pane-expand'
+export const SEND_TERMINAL_QUICK_COMMAND_EVENT = 'orca-send-terminal-quick-command'
 export const FOCUS_TERMINAL_PANE_EVENT = 'orca-focus-terminal-pane'
 export const PASTE_TERMINAL_TEXT_EVENT = 'orca-paste-terminal-text'
 export const SPLIT_TERMINAL_PANE_EVENT = 'orca-split-terminal-pane'
@@ -48,6 +50,14 @@ export type PasteTerminalTextDetail = {
   tabId: string
   paneId?: number
   text: string
+}
+
+export type SendTerminalQuickCommandDetail = {
+  tabId: string
+  command: TerminalQuickCommand
+  /** Set true by the receiving TerminalPane once the text reaches a live PTY,
+   *  so the synchronous dispatcher can fall back to a new tab otherwise. */
+  delivered?: boolean
 }
 
 export type SplitTerminalPaneDetail = {

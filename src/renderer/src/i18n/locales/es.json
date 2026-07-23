@@ -2540,6 +2540,11 @@
               "b83efc79e2": "Global",
               "c25cf350ef": "Alcance",
               "f0631e4999": "repositorio"
+            },
+            "TerminalQuickCommandRunInActiveTabSwitch": {
+              "7d3c91a5e2": "Run in active terminal",
+              "b1f8e6c204": "Send to the current terminal tab instead of opening a new one.",
+              "f5a2d78b91": "Toggle run in active terminal"
             }
           }
         },

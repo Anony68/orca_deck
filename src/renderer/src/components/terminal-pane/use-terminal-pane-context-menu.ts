@@ -26,7 +26,9 @@ import { writeTerminalPastePtyInput } from './terminal-pty-paste-writer'
 import { scheduleImagePasteWebglAtlasRecovery } from './terminal-webgl-atlas-recovery'
 import {
   REQUEST_ACTIVE_TERMINAL_PANE_SPLIT_EVENT,
-  type RequestActiveTerminalPaneSplitDetail
+  SEND_TERMINAL_QUICK_COMMAND_EVENT,
+  type RequestActiveTerminalPaneSplitDetail,
+  type SendTerminalQuickCommandDetail
 } from '@/constants/terminal'
 import { makePaneKey } from '../../../../shared/stable-pane-id'
 import { runQuickCommandInNewTab } from '@/lib/run-quick-command-in-new-tab'
@@ -364,6 +366,30 @@ export function useTerminalPaneContextMenu({
     // splitWithInheritedCwd closes over live refs; re-registering keeps the
     // tour action aligned with the current focused pane and fallback cwd.
   }, [tabId, splitWithInheritedCwd])
+
+  useEffect(() => {
+    const onSendQuickCommand = (event: Event): void => {
+      const detail = (event as CustomEvent<SendTerminalQuickCommandDetail | undefined>).detail
+      if (!detail || detail.tabId !== tabId || detail.delivered) {
+        return
+      }
+      const manager = managerRef.current
+      const pane = manager?.getActivePane() ?? manager?.getPanes()[0] ?? null
+      if (!pane) {
+        return
+      }
+      // Why: dispatch is synchronous, so flagging delivery on the detail lets
+      // the tab-bar dispatcher fall back to a new tab when no pane consumed it.
+      detail.delivered = sendTerminalQuickCommandToPane({
+        command: detail.command,
+        pane,
+        tabId,
+        transport: paneTransportsRef.current.get(pane.id)
+      })
+    }
+    window.addEventListener(SEND_TERMINAL_QUICK_COMMAND_EVENT, onSendQuickCommand)
+    return () => window.removeEventListener(SEND_TERMINAL_QUICK_COMMAND_EVENT, onSendQuickCommand)
+  }, [tabId, managerRef, paneTransportsRef])
 
   const onEqualizePaneSizes = (): void => {
     const pane = resolveMenuPane()

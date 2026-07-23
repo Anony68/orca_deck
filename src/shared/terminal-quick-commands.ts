@@ -17,14 +17,80 @@ export const MAX_QUICK_COMMAND_TERMINAL_TEXT_LENGTH = 4000
 export const MAX_QUICK_COMMAND_AGENT_PROMPT_LENGTH = 6000
 const REMOVED_PRESET_IDS = new Set(['default-pwd', 'default-git-status'])
 
-const DEFAULT_TERMINAL_QUICK_COMMANDS: TerminalQuickCommand[] = []
+// Why: labels are persisted user data (editable/deletable), so they stay plain
+// strings rather than i18n keys. Shapes must round-trip normalization exactly
+// or parseNormalizedTerminalQuickCommands rejects full-list sync payloads.
+const DEFAULT_TERMINAL_QUICK_COMMANDS: TerminalCommandQuickCommand[] = [
+  {
+    id: 'claude-preset-run',
+    label: 'Run Claude',
+    action: 'terminal-command',
+    command: 'claude',
+    appendEnter: true,
+    scope: { type: 'global' }
+  },
+  {
+    id: 'claude-preset-continue',
+    label: 'Continue last session',
+    action: 'terminal-command',
+    command: 'claude -c',
+    appendEnter: true,
+    scope: { type: 'global' }
+  },
+  {
+    id: 'claude-preset-resume',
+    label: 'Pick a session',
+    action: 'terminal-command',
+    command: 'claude -r',
+    appendEnter: true,
+    scope: { type: 'global' }
+  },
+  {
+    id: 'claude-preset-skip-permissions',
+    label: 'Run skipping permissions (dangerous)',
+    action: 'terminal-command',
+    command: 'claude --dangerously-skip-permissions',
+    appendEnter: true,
+    scope: { type: 'global' }
+  },
+  {
+    id: 'claude-preset-update',
+    label: 'Update Claude',
+    action: 'terminal-command',
+    command: 'claude update',
+    appendEnter: true,
+    scope: { type: 'global' }
+  }
+]
 
 export type TerminalQuickCommandMutation =
   | { type: 'upsert'; command: TerminalQuickCommand }
   | { type: 'delete'; id: string }
 
 export function getDefaultTerminalQuickCommands(): TerminalQuickCommand[] {
-  return DEFAULT_TERMINAL_QUICK_COMMANDS.map((command) => ({ ...command }))
+  return DEFAULT_TERMINAL_QUICK_COMMANDS.map((command) => ({
+    ...command,
+    scope: { type: 'global' }
+  }))
+}
+
+// Why: profiles that persisted a quick-command array before the Claude presets
+// shipped get them merged once at load (guarded by
+// terminalQuickCommandsClaudePresetsSeeded) so a deleted preset never returns.
+export function seedDefaultTerminalQuickCommands(
+  commands: readonly TerminalQuickCommand[]
+): TerminalQuickCommand[] {
+  const existingIds = new Set(commands.map((command) => command.id))
+  const seeded = [...commands]
+  for (const preset of getDefaultTerminalQuickCommands()) {
+    if (seeded.length >= MAX_QUICK_COMMANDS) {
+      break
+    }
+    if (!existingIds.has(preset.id)) {
+      seeded.push(preset)
+    }
+  }
+  return seeded
 }
 
 function normalizeTerminalQuickCommandScope(input: unknown): TerminalQuickCommandScope {
@@ -150,7 +216,10 @@ export function normalizeTerminalQuickCommands(input: unknown): TerminalQuickCom
         ...base,
         action: 'terminal-command',
         command: command.slice(0, MAX_QUICK_COMMAND_TERMINAL_TEXT_LENGTH),
-        appendEnter: record.appendEnter !== false
+        appendEnter: record.appendEnter !== false,
+        // Why: emitted only when true so legacy 6-key commands stay byte-identical
+        // and pre-field sync clients keep accepting untouched lists.
+        ...(record.runInActiveTab === true ? { runInActiveTab: true as const } : {})
       })
     }
 
@@ -159,75 +228,6 @@ export function normalizeTerminalQuickCommands(input: unknown): TerminalQuickCom
     }
   }
 
-  return normalized
-}
-
-function hasExactKeys(record: Record<string, unknown>, keys: readonly string[]): boolean {
-  const actual = Object.keys(record)
-  return actual.length === keys.length && keys.every((key) => Object.hasOwn(record, key))
-}
-
-function isNormalizedTerminalQuickCommandScope(
-  value: unknown,
-  expected: TerminalQuickCommandScope
-): boolean {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  const scope = value as Record<string, unknown>
-  if (expected.type === 'global') {
-    return hasExactKeys(scope, ['type']) && scope.type === 'global'
-  }
-  return (
-    hasExactKeys(scope, ['type', 'repoId']) &&
-    scope.type === 'repo' &&
-    scope.repoId === expected.repoId
-  )
-}
-
-function isNormalizedTerminalQuickCommand(value: unknown, expected: TerminalQuickCommand): boolean {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  const command = value as Record<string, unknown>
-  if (
-    command.id !== expected.id ||
-    command.label !== expected.label ||
-    !isNormalizedTerminalQuickCommandScope(command.scope, expected.scope ?? { type: 'global' })
-  ) {
-    return false
-  }
-  if (isTerminalAgentQuickCommand(expected)) {
-    return (
-      hasExactKeys(command, ['id', 'label', 'action', 'agent', 'prompt', 'scope']) &&
-      command.action === 'agent-prompt' &&
-      command.agent === expected.agent &&
-      command.prompt === expected.prompt
-    )
-  }
-  return (
-    hasExactKeys(command, ['id', 'label', 'action', 'command', 'appendEnter', 'scope']) &&
-    command.action === 'terminal-command' &&
-    command.command === expected.command &&
-    command.appendEnter === expected.appendEnter
-  )
-}
-
-// Why: a full-list client must reject any "authoritative" payload that would
-// change under normalization, or its next mutation could persist silent loss.
-export function parseNormalizedTerminalQuickCommands(
-  input: unknown
-): TerminalQuickCommand[] | null {
-  if (!Array.isArray(input) || input.length > MAX_QUICK_COMMANDS) {
-    return null
-  }
-  const normalized = normalizeTerminalQuickCommands(input)
-  if (
-    normalized.length !== input.length ||
-    normalized.some((command, index) => !isNormalizedTerminalQuickCommand(input[index], command))
-  ) {
-    return null
-  }
   return normalized
 }
 

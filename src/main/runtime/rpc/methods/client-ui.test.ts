@@ -210,6 +210,64 @@ describe('client UI RPC methods', () => {
     })
   })
 
+  it('accepts runInActiveTab true and rejects explicit false in quick-command upserts', async () => {
+    const runtime = {
+      getRuntimeId: () => 'test-runtime',
+      updateClientTerminalQuickCommands: vi.fn(() => [])
+    } as unknown as OrcaRuntimeService
+    const dispatcher = new RpcDispatcher({ runtime, methods: CLIENT_UI_METHODS })
+
+    const accepted = await dispatcher.dispatch(
+      makeRequest('settings.updateTerminalQuickCommands', {
+        mutation: {
+          type: 'upsert',
+          command: {
+            id: 'here',
+            label: 'Here',
+            action: 'terminal-command',
+            command: 'pwd',
+            appendEnter: true,
+            runInActiveTab: true,
+            scope: { type: 'global' }
+          }
+        }
+      })
+    )
+    expect(accepted).toMatchObject({ ok: true })
+    expect(runtime.updateClientTerminalQuickCommands).toHaveBeenCalledWith({
+      type: 'upsert',
+      command: {
+        id: 'here',
+        label: 'Here',
+        action: 'terminal-command',
+        command: 'pwd',
+        appendEnter: true,
+        runInActiveTab: true,
+        scope: { type: 'global' }
+      }
+    })
+
+    // Why: explicit false would change under normalization and poison the
+    // strict full-list round-trip check on paired clients.
+    const rejected = await dispatcher.dispatch(
+      makeRequest('settings.updateTerminalQuickCommands', {
+        mutation: {
+          type: 'upsert',
+          command: {
+            id: 'here',
+            label: 'Here',
+            action: 'terminal-command',
+            command: 'pwd',
+            appendEnter: true,
+            runInActiveTab: false,
+            scope: { type: 'global' }
+          }
+        }
+      })
+    )
+    expect(rejected).toMatchObject({ ok: false, error: { code: 'invalid_argument' } })
+  })
+
   it('rejects malformed quick-command mutations instead of changing persisted commands', async () => {
     const runtime = {
       getRuntimeId: () => 'test-runtime',

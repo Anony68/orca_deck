@@ -125,6 +125,23 @@ export function TerminalQuickCommandDialog({
     )
   }
 
+  const toggleRunInActiveTab = (): void => {
+    setDraft((current) => {
+      if (isTerminalAgentQuickCommand(current)) {
+        return current
+      }
+      const runInActiveTab = current.runInActiveTab !== true
+      draftMemoryRef.current = {
+        ...draftMemoryRef.current,
+        terminalRunInActiveTab: runInActiveTab
+      }
+      // Why: the persisted shape is absent-or-true, so toggling off must drop
+      // the key rather than store `false`.
+      const { runInActiveTab: _previous, ...rest } = current
+      return runInActiveTab ? { ...rest, runInActiveTab: true } : rest
+    })
+  }
+
   const saveDraft = (): void => {
     const next: TerminalQuickCommand = isTerminalAgentQuickCommand(draft)
       ? {
@@ -141,6 +158,7 @@ export function TerminalQuickCommandDialog({
           action: 'terminal-command',
           command: draft.command.trimEnd(),
           appendEnter: draft.appendEnter,
+          ...(draft.runInActiveTab === true ? { runInActiveTab: true as const } : {}),
           scope: selectedScope
         }
     if (
@@ -228,6 +246,7 @@ export function TerminalQuickCommandDialog({
             setAdvancedOpen={setAdvancedOpen}
             setDraft={setDraft}
             toggleAppendEnter={toggleAppendEnter}
+            toggleRunInActiveTab={toggleRunInActiveTab}
           />
         </div>
 

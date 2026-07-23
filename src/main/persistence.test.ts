@@ -2803,6 +2803,60 @@ describe('Store', () => {
     expect(store.getSettings().floatingTerminalDefaultedForAllUsers).toBe(true)
   })
 
+  it('seeds the Claude preset quick commands into an existing profile once', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: {
+        terminalQuickCommands: [
+          {
+            id: 'mine',
+            label: 'Mine',
+            action: 'terminal-command',
+            command: 'pwd',
+            appendEnter: true,
+            scope: { type: 'global' }
+          }
+        ]
+      },
+      ui: {},
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+
+    const store = await createStore()
+    const settings = store.getSettings()
+    expect(settings.terminalQuickCommands?.map((command) => command.id)).toEqual([
+      'mine',
+      'claude-preset-run',
+      'claude-preset-continue',
+      'claude-preset-resume',
+      'claude-preset-skip-permissions',
+      'claude-preset-update'
+    ])
+    expect(settings.terminalQuickCommandsClaudePresetsSeeded).toBe(true)
+  })
+
+  it('does not reseed Claude preset quick commands the user deleted', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: {
+        terminalQuickCommands: [],
+        terminalQuickCommandsClaudePresetsSeeded: true
+      },
+      ui: {},
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+
+    const store = await createStore()
+    expect(store.getSettings().terminalQuickCommands).toEqual([])
+    expect(store.getSettings().terminalQuickCommandsClaudePresetsSeeded).toBe(true)
+  })
+
   it('migrates the legacy Linux primary-selection default to enabled', async () => {
     await withPlatform('linux', async () => {
       writeDataFile({

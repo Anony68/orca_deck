@@ -7,11 +7,11 @@ import {
   MAX_QUICK_COMMAND_AGENT_PROMPT_LENGTH,
   MAX_QUICK_COMMAND_LABEL_LENGTH,
   MAX_QUICK_COMMAND_TERMINAL_TEXT_LENGTH,
-  parseNormalizedTerminalQuickCommands,
   supportsTerminalAgentQuickCommand,
   terminalQuickCommandMatchesRepo,
   type TerminalQuickCommandMutation
 } from '../../../src/shared/terminal-quick-commands'
+import { parseNormalizedTerminalQuickCommands } from '../../../src/shared/terminal-quick-command-sync-parse'
 import { TERMINAL_QUICK_COMMANDS_RUNTIME_CAPABILITY } from '../../../src/shared/protocol-version'
 import { MOBILE_TUI_AGENT_LABELS } from '../tasks/mobile-tui-agents'
 

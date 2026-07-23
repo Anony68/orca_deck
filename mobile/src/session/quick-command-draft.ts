@@ -21,6 +21,9 @@ export type QuickCommandDraft = {
   action: TerminalQuickCommandAction
   command: string
   appendEnter: boolean
+  // Why: desktop-only run target, carried through so a mobile edit doesn't
+  // silently strip the flag from a synced command.
+  runInActiveTab: boolean
   agent: TuiAgent | null
   prompt: string
   scope: TerminalQuickCommandScope
@@ -33,6 +36,7 @@ export function createEmptyQuickCommandDraft(scope: TerminalQuickCommandScope): 
     action: 'terminal-command',
     command: '',
     appendEnter: true,
+    runInActiveTab: false,
     agent: null,
     prompt: '',
     scope
@@ -51,6 +55,7 @@ export function quickCommandToDraft(command: TerminalQuickCommand): QuickCommand
       action: 'agent-prompt',
       command: '',
       appendEnter: true,
+      runInActiveTab: false,
       agent: command.agent,
       prompt: command.prompt,
       scope
@@ -62,6 +67,7 @@ export function quickCommandToDraft(command: TerminalQuickCommand): QuickCommand
     action: 'terminal-command',
     command: command.command,
     appendEnter: command.appendEnter !== false,
+    runInActiveTab: command.runInActiveTab === true,
     agent: null,
     prompt: '',
     scope
@@ -111,6 +117,7 @@ export function draftToQuickCommand(draft: QuickCommandDraft): TerminalQuickComm
     action: 'terminal-command',
     command: draft.command.trimEnd().slice(0, MAX_QUICK_COMMAND_TERMINAL_TEXT_LENGTH),
     appendEnter: draft.appendEnter,
+    ...(draft.runInActiveTab ? { runInActiveTab: true as const } : {}),
     scope: draft.scope
   }
 }

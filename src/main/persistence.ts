@@ -149,7 +149,10 @@ import {
   isWindowsAbsolutePathLike,
   normalizeRuntimePathForComparison
 } from '../shared/cross-platform-path'
-import { normalizeTerminalQuickCommands } from '../shared/terminal-quick-commands'
+import {
+  normalizeTerminalQuickCommands,
+  seedDefaultTerminalQuickCommands
+} from '../shared/terminal-quick-commands'
 import { normalizeTaskProviderSettings } from '../shared/task-providers'
 import { normalizeAutoRenameBranchFromWorkDefaultOn } from '../shared/auto-rename-branch-from-work-settings'
 import { normalizeOpenInApplications } from '../shared/open-in-applications'
@@ -3055,9 +3058,13 @@ export class Store {
             floatingTerminalTrustedCwds: migratedFloatingTerminalTrustedCwds,
             floatingTerminalCwdMigratedToAppWorkspace: true,
             terminalScrollbackRows: migratedTerminalScrollback.rows,
-            terminalQuickCommands: normalizeTerminalQuickCommands(
-              parsed.settings?.terminalQuickCommands
-            ),
+            // Why: profiles saved before the Claude presets already hold an array; seed once so a deleted preset stays deleted.
+            terminalQuickCommands: parsed.settings?.terminalQuickCommandsClaudePresetsSeeded
+              ? normalizeTerminalQuickCommands(parsed.settings?.terminalQuickCommands)
+              : seedDefaultTerminalQuickCommands(
+                  normalizeTerminalQuickCommands(parsed.settings?.terminalQuickCommands)
+                ),
+            terminalQuickCommandsClaudePresetsSeeded: true,
             terminalCustomThemes: normalizeTerminalCustomThemes(
               parsed.settings?.terminalCustomThemes
             ),

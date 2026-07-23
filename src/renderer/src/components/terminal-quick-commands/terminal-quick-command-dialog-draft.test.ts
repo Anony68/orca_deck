@@ -115,6 +115,44 @@ describe('terminal quick command dialog draft transitions', () => {
       appendEnter: true
     })
   })
+
+  it('preserves runInActiveTab across action toggles and drops it when off', () => {
+    const initial: TerminalQuickCommand = {
+      id: 'qc-1',
+      label: 'Here',
+      action: 'terminal-command',
+      command: 'pwd',
+      appendEnter: true,
+      runInActiveTab: true,
+      scope: { type: 'global' }
+    }
+    const memory = createTerminalQuickCommandDialogDraftMemory(initial, 'claude')
+    const toAgent = switchTerminalQuickCommandDialogAction(initial, 'agent-prompt', memory)
+    const backToTerminal = switchTerminalQuickCommandDialogAction(
+      toAgent.draft,
+      'terminal-command',
+      toAgent.memory
+    )
+
+    expect(backToTerminal.draft).toMatchObject({ runInActiveTab: true })
+
+    const withoutFlag: TerminalQuickCommand = { ...initial }
+    delete withoutFlag.runInActiveTab
+    const offMemory = createTerminalQuickCommandDialogDraftMemory(withoutFlag, 'claude')
+    const offToAgent = switchTerminalQuickCommandDialogAction(
+      withoutFlag,
+      'agent-prompt',
+      offMemory
+    )
+    const offBack = switchTerminalQuickCommandDialogAction(
+      offToAgent.draft,
+      'terminal-command',
+      offToAgent.memory
+    )
+    // Why: the persisted shape is absent-or-true; a restored draft must not
+    // reintroduce the key as `false`.
+    expect(Object.hasOwn(offBack.draft, 'runInActiveTab')).toBe(false)
+  })
 })
 
 describe('terminal quick command dialog scope transitions', () => {

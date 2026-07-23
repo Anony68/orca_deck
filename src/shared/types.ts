@@ -2532,6 +2532,9 @@ export type TerminalCommandQuickCommand = TerminalQuickCommandBase & {
   action?: 'terminal-command'
   command: string
   appendEnter: boolean
+  /** Present (true) → send to the group's visible terminal tab; absent → open a new tab.
+   *  Absent-or-true keeps legacy 6-key payloads byte-identical for full-list sync clients. */
+  runInActiveTab?: true
 }
 
 export type TerminalAgentQuickCommand = TerminalQuickCommandBase & {
@@ -2663,6 +2666,8 @@ export type GlobalSettings = {
   terminalWordSeparator?: string
   terminalCursorOpacity?: number
   terminalQuickCommands?: TerminalQuickCommand[]
+  /** One-shot guard: default Claude quick commands seed once, so a deleted preset never returns. */
+  terminalQuickCommandsClaudePresetsSeeded?: boolean
   windowBackgroundBlur?: boolean
   /** Windows-only: close (X) hides to tray instead of quitting; the tray icon is always present regardless. */
   minimizeToTrayOnClose?: boolean
