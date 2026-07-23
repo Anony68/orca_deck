@@ -189,6 +189,12 @@ import type {
   AutomationPrecheckResult,
   AutomationUpdateInput
 } from '../shared/automations-types'
+import type {
+  Reminder,
+  ReminderCreateInput,
+  ReminderFiredPayload,
+  ReminderUpdateInput
+} from '../shared/reminder-types'
 import type { KeybindingActionId, KeybindingFileSnapshot } from '../shared/keybindings'
 import type { AiVaultListArgs, AiVaultSubagentListArgs } from '../shared/ai-vault-types'
 import type { AiVaultPrepareSessionResumeArgs } from '../shared/ai-vault-resume-preparation'
@@ -4318,6 +4324,32 @@ const api = {
         callback(request)
       ipcRenderer.on('automations:dispatchRequested', listener)
       return () => ipcRenderer.removeListener('automations:dispatchRequested', listener)
+    }
+  },
+
+  reminders: {
+    list: (): Promise<Reminder[]> => ipcRenderer.invoke('reminders:list'),
+    create: (input: ReminderCreateInput): Promise<Reminder> =>
+      ipcRenderer.invoke('reminders:create', input),
+    update: (args: { id: string; updates: ReminderUpdateInput }): Promise<Reminder> =>
+      ipcRenderer.invoke('reminders:update', args),
+    complete: (args: { id: string }): Promise<Reminder> =>
+      ipcRenderer.invoke('reminders:complete', args),
+    dismiss: (args: { id: string }): Promise<Reminder> =>
+      ipcRenderer.invoke('reminders:dismiss', args),
+    delete: (args: { id: string }): Promise<void> => ipcRenderer.invoke('reminders:delete', args),
+    rendererReady: (): Promise<void> => ipcRenderer.invoke('reminders:rendererReady'),
+    onChanged: (callback: (reminders: Reminder[]) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, reminders: Reminder[]) =>
+        callback(reminders)
+      ipcRenderer.on('reminders:changed', listener)
+      return () => ipcRenderer.removeListener('reminders:changed', listener)
+    },
+    onFired: (callback: (payload: ReminderFiredPayload) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: ReminderFiredPayload) =>
+        callback(payload)
+      ipcRenderer.on('reminders:fired', listener)
+      return () => ipcRenderer.removeListener('reminders:fired', listener)
     }
   },
 

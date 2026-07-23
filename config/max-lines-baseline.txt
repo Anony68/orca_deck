@@ -94,7 +94,6 @@ inline src/main/ipc/github.ts
 inline src/main/ipc/gitlab.ts
 inline src/main/ipc/linear.ts
 inline src/main/ipc/notifications.test.ts
-inline src/main/ipc/notifications.ts
 inline src/main/ipc/pet.ts
 inline src/main/ipc/preflight.test.ts
 inline src/main/ipc/pty.test.ts

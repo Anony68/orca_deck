@@ -133,6 +133,7 @@ export function getDefaultNotificationSettings(): NotificationSettings {
     enabled: true,
     agentTaskComplete: true,
     terminalBell: false,
+    reminders: true,
     suppressWhenFocused: true,
     customSoundId: 'system',
     customSoundPath: null,
@@ -423,6 +424,7 @@ export function getDefaultPersistedState(homedir: string): PersistedState {
     legacyPaneKeyAliasEntries: [],
     automations: [],
     automationRuns: [],
+    reminders: [],
     onboarding: getDefaultOnboardingState(),
     featureInteractionTelemetryBuckets: {}
   }

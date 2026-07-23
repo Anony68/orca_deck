@@ -48,6 +48,7 @@ export const BOOLEAN_FLAGS = new Set([
   'mobile',
   'mobile-pairing',
   'no-pairing',
+  'no-workspace',
   'parent-current',
   'provision',
   'ready',
@@ -217,6 +218,7 @@ export function isCommandGroup(commandPath: string[]): boolean {
     (commandPath.length === 1 &&
       [
         'automations',
+        'reminders',
         'project',
         'repo',
         'worktree',

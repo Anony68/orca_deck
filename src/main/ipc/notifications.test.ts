@@ -1691,3 +1691,140 @@ describe('triggerStartupNotificationRegistration', () => {
     }
   })
 })
+
+describe('reminder notification source', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-28T16:00:00Z'))
+    removeHandlerMock.mockReset()
+    handleMock.mockReset()
+    notificationCtorMock.mockClear()
+    notificationShowMock.mockClear()
+    notificationIsSupportedMock.mockReset()
+    notificationIsSupportedMock.mockReturnValue(true)
+    readAuthorizationStatusMock.mockReset()
+    readAuthorizationStatusMock.mockResolvedValue(null)
+    getAllWindowsMock.mockReset()
+    getAllWindowsMock.mockReturnValue([])
+    setTrayAttentionMock.mockClear()
+  })
+
+  function makeStore(reminders = true): never {
+    return {
+      getSettings: () => ({
+        notifications: {
+          enabled: true,
+          agentTaskComplete: true,
+          terminalBell: false,
+          reminders,
+          suppressWhenFocused: true
+        }
+      })
+    } as never
+  }
+
+  function reminderDispatchHandler(): (event: unknown, args: unknown) => unknown {
+    const call = handleMock.mock.calls.find((c: unknown[]) => c[0] === 'notifications:dispatch')
+    if (!call) {
+      throw new Error('notifications:dispatch handler not registered')
+    }
+    return call[1] as (event: unknown, args: unknown) => unknown
+  }
+
+  it('delivers reminder notifications with reminder-built title and body', async () => {
+    registerNotificationHandlers(makeStore())
+    const handler = reminderDispatchHandler()
+
+    expect(
+      await handler(
+        {},
+        {
+          source: 'reminder',
+          notificationId: 'reminder:r1:100',
+          reminderMessage: 'Water the plants',
+          reminderDueAt: 100,
+          reminderOverdue: false
+        }
+      )
+    ).toEqual({ delivered: true })
+    expect(notificationCtorMock).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Reminder', body: 'Water the plants' })
+    )
+    // Why: reminders must light the tray attention dot when no window is visible.
+    expect(setTrayAttentionMock).toHaveBeenCalledWith(true)
+  })
+
+  it('honors the reminders notification setting', async () => {
+    registerNotificationHandlers(makeStore(false))
+    const handler = reminderDispatchHandler()
+
+    expect(
+      await handler(
+        {},
+        { source: 'reminder', notificationId: 'reminder:r1:100', reminderMessage: 'Skip me' }
+      )
+    ).toEqual({ delivered: false, reason: 'source-disabled' })
+    expect(notificationCtorMock).not.toHaveBeenCalled()
+  })
+
+  it('dedupes reminders by occurrence id, independent of the worktree burst key', async () => {
+    registerNotificationHandlers(makeStore())
+    const handler = reminderDispatchHandler()
+
+    expect(await handler({}, { source: 'agent-task-complete', worktreeId: 'repo::wt1' })).toEqual({
+      delivered: true
+    })
+    // Why: an agent-finish burst in the same worktree must not swallow a due reminder.
+    expect(
+      await handler(
+        {},
+        {
+          source: 'reminder',
+          notificationId: 'reminder:r1:100',
+          worktreeId: 'repo::wt1',
+          reminderMessage: 'Standup'
+        }
+      )
+    ).toEqual({ delivered: true })
+    expect(
+      await handler(
+        {},
+        {
+          source: 'reminder',
+          notificationId: 'reminder:r1:100',
+          worktreeId: 'repo::wt1',
+          reminderMessage: 'Standup'
+        }
+      )
+    ).toEqual({ delivered: false, reason: 'cooldown' })
+  })
+
+  it('forwards reminders to paired phones with the reminder source', async () => {
+    notificationIsSupportedMock.mockReturnValue(false)
+    const dispatchMobileNotification = vi.fn()
+    registerNotificationHandlers(makeStore(), { dispatchMobileNotification } as never)
+    const handler = reminderDispatchHandler()
+
+    expect(
+      await handler(
+        {},
+        {
+          source: 'reminder',
+          notificationId: 'reminder:r1:100',
+          worktreeId: 'repo::wt1',
+          worktreeLabel: 'feat/deploy',
+          reminderMessage: 'Check the deploy',
+          reminderOverdue: true
+        }
+      )
+    ).toEqual({ delivered: false, reason: 'not-supported' })
+    expect(dispatchMobileNotification).toHaveBeenCalledWith({
+      type: 'notification',
+      source: 'reminder',
+      title: 'Overdue reminder · feat/deploy',
+      body: 'Check the deploy',
+      worktreeId: 'repo::wt1',
+      notificationId: 'reminder:r1:100'
+    })
+  })
+})

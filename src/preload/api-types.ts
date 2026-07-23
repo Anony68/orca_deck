@@ -485,6 +485,12 @@ import type {
   AutomationUpdateInput
 } from '../shared/automations-types'
 import type {
+  Reminder,
+  ReminderCreateInput,
+  ReminderFiredPayload,
+  ReminderUpdateInput
+} from '../shared/reminder-types'
+import type {
   WorkspaceCleanupDismissArgs,
   WorkspaceCleanupLocalProcessArgs,
   WorkspaceCleanupLocalProcessResult,
@@ -3215,6 +3221,17 @@ export type PreloadApi = {
     snapshotWorkspaceName: (args: { workspaceId: string; displayName: string }) => Promise<number>
     rendererReady: () => Promise<void>
     onDispatchRequested: (callback: (request: AutomationDispatchRequest) => void) => () => void
+  }
+  reminders: {
+    list: () => Promise<Reminder[]>
+    create: (input: ReminderCreateInput) => Promise<Reminder>
+    update: (args: { id: string; updates: ReminderUpdateInput }) => Promise<Reminder>
+    complete: (args: { id: string }) => Promise<Reminder>
+    dismiss: (args: { id: string }) => Promise<Reminder>
+    delete: (args: { id: string }) => Promise<void>
+    rendererReady: () => Promise<void>
+    onChanged: (callback: (reminders: Reminder[]) => void) => () => void
+    onFired: (callback: (payload: ReminderFiredPayload) => void) => () => void
   }
   wsl: {
     isAvailable: () => Promise<boolean>

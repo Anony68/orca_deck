@@ -30,6 +30,17 @@ import {
   latestAutomationOccurrenceAtOrBefore,
   nextAutomationOccurrenceAfter
 } from '../shared/automation-schedules'
+import {
+  isSettledReminderStatus,
+  MAX_PENDING_REMINDERS,
+  MAX_SETTLED_REMINDERS,
+  normalizeReminders,
+  REMINDER_DEFAULT_GRACE_MINUTES,
+  REMINDER_MESSAGE_MAX_LENGTH,
+  type Reminder,
+  type ReminderCreateInput,
+  type ReminderUpdateInput
+} from '../shared/reminder-types'
 import { getAutomationLegacyRepoId } from '../shared/automation-run-identity'
 import { normalizeAutomationPrecheck } from '../shared/automation-precheck'
 import type {
@@ -3342,6 +3353,7 @@ export class Store {
             }
             return runs
           })(),
+          reminders: normalizeReminders(parsed.reminders),
           onboarding: normalizedOnboarding
         }
       }
@@ -4838,6 +4850,128 @@ export class Store {
 
   getLatestAutomationOccurrence(automation: Automation, now = Date.now()): number | null {
     return latestAutomationOccurrenceAtOrBefore(automation.rrule, automation.dtstart, now)
+  }
+
+  // ── Reminders ──────────────────────────────────────────────────────
+
+  // Why: settled reminders are history, not schedule state; keep only the
+  // newest MAX_SETTLED_REMINDERS so the file can't grow unbounded.
+  private pruneSettledRemindersList(reminders: Reminder[]): Reminder[] {
+    const settled = reminders
+      .filter((entry) => isSettledReminderStatus(entry.status))
+      .sort((left, right) => right.updatedAt - left.updatedAt)
+    if (settled.length <= MAX_SETTLED_REMINDERS) {
+      return reminders
+    }
+    const evicted = new Set(settled.slice(MAX_SETTLED_REMINDERS).map((entry) => entry.id))
+    return reminders.filter((entry) => !evicted.has(entry.id))
+  }
+
+  listReminders(): Reminder[] {
+    return [...(this.state.reminders ?? [])].sort((left, right) => left.dueAt - right.dueAt)
+  }
+
+  createReminder(input: ReminderCreateInput): Reminder {
+    const reminders = this.state.reminders ?? []
+    const activeCount = reminders.filter((entry) => !isSettledReminderStatus(entry.status)).length
+    if (activeCount >= MAX_PENDING_REMINDERS) {
+      throw new Error(`Reminder limit reached (${MAX_PENDING_REMINDERS} active).`)
+    }
+    const message = input.message.trim().slice(0, REMINDER_MESSAGE_MAX_LENGTH)
+    if (!message) {
+      throw new Error('Reminder message is empty.')
+    }
+    const now = Date.now()
+    const reminder: Reminder = {
+      id: randomUUID(),
+      message,
+      status: 'pending',
+      dueAt: input.dueAt,
+      recurrence: input.recurrence,
+      timezone: input.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      worktreeId: input.worktreeId ?? null,
+      createdVia: input.createdVia,
+      missedFireGraceMinutes: REMINDER_DEFAULT_GRACE_MINUTES,
+      lastFiredAt: null,
+      firedCount: 0,
+      completedAt: null,
+      createdAt: now,
+      updatedAt: now
+    }
+    this.state.reminders = [...this.pruneSettledRemindersList(reminders), reminder]
+    this.flush()
+    return reminder
+  }
+
+  private requireReminderIndex(id: string): number {
+    const index = (this.state.reminders ?? []).findIndex((entry) => entry.id === id)
+    if (index === -1) {
+      throw new Error('Reminder not found.')
+    }
+    return index
+  }
+
+  updateReminder(id: string, updates: ReminderUpdateInput): Reminder {
+    const index = this.requireReminderIndex(id)
+    const current = this.state.reminders[index]
+    const message =
+      updates.message !== undefined
+        ? updates.message.trim().slice(0, REMINDER_MESSAGE_MAX_LENGTH) || current.message
+        : current.message
+    const updated: Reminder = {
+      ...current,
+      ...updates,
+      message,
+      updatedAt: Date.now()
+    }
+    this.state.reminders[index] = updated
+    this.flush()
+    return updated
+  }
+
+  completeReminder(id: string): Reminder {
+    const index = this.requireReminderIndex(id)
+    const now = Date.now()
+    const updated: Reminder = {
+      ...this.state.reminders[index],
+      status: 'completed',
+      completedAt: now,
+      updatedAt: now
+    }
+    this.state.reminders[index] = updated
+    this.flush()
+    return updated
+  }
+
+  dismissReminder(id: string): Reminder {
+    return this.updateReminder(id, { status: 'dismissed' })
+  }
+
+  deleteReminder(id: string): void {
+    this.requireReminderIndex(id)
+    this.state.reminders = this.state.reminders.filter((entry) => entry.id !== id)
+    this.flush()
+  }
+
+  /** Persisted BEFORE delivery — the duplicate-fire guard across restarts. */
+  markReminderFired(id: string, args: { occurrence: number; nextDueAt?: number }): Reminder {
+    const index = this.requireReminderIndex(id)
+    const current = this.state.reminders[index]
+    const updated: Reminder = {
+      ...current,
+      status: args.nextDueAt !== undefined ? 'pending' : 'fired',
+      dueAt: args.nextDueAt ?? current.dueAt,
+      lastFiredAt: args.occurrence,
+      firedCount: current.firedCount + 1,
+      updatedAt: Date.now()
+    }
+    this.state.reminders[index] = updated
+    this.flush()
+    return updated
+  }
+
+  settleReminderMissed(id: string): Reminder {
+    return this.updateReminder(id, { status: 'missed' })
   }
 
   // ── Worktree Meta ──────────────────────────────────────────────────

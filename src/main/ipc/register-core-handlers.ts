@@ -43,6 +43,7 @@ import { registerWorkspaceSpaceHandlers } from './workspace-space'
 import { registerWorkspacePortHandlers } from './workspace-ports'
 import { registerLocalhostWorktreeLabelHandlers } from './localhost-worktree-labels'
 import { registerAutomationHandlers } from './automations'
+import { registerReminderHandlers } from './reminders'
 import { registerKeybindingHandlers } from './keybindings'
 import { registerTelemetryHandlers } from './telemetry'
 import { registerBrowserHandlers } from './browser'
@@ -73,6 +74,7 @@ import type { RateLimitService } from '../rate-limits/service'
 import type { CodexAccountService } from '../codex-accounts/service'
 import type { ClaudeAccountService } from '../claude-accounts/service'
 import type { AutomationService } from '../automations/service'
+import type { ReminderService } from '../reminders/service'
 import type { AgentAwakeService } from '../agent-awake-service'
 import type { CrashReportStore } from '../crash-reporting/crash-report-store'
 import type { KeybindingService } from '../keybindings/keybinding-service'
@@ -114,6 +116,7 @@ export function registerCoreHandlers(
   agentAwakeService?: AgentAwakeService,
   crashReports?: CrashReportStore,
   keybindings?: KeybindingService,
+  reminders?: ReminderService,
   lifecycleOptions: CoreHandlerLifecycleOptions = {}
 ): void {
   // Why: on macOS the app can stay alive after all windows close, then
@@ -171,6 +174,9 @@ export function registerCoreHandlers(
   registerSkillsHandlers(store)
   if (automations) {
     registerAutomationHandlers(store, automations)
+  }
+  if (reminders) {
+    registerReminderHandlers(reminders)
   }
   if (keybindings) {
     registerKeybindingHandlers(keybindings)

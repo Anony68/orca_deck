@@ -120,6 +120,7 @@ import type { BrowserPage, BrowserWorkspace, Worktree } from '../../../shared/ty
 import { isGitRepoKind } from '../../../shared/repo-kind'
 import { buildTaskSourceContextFromRepo } from '../../../shared/task-source-context'
 import { translate } from '@/i18n/i18n'
+import { requestOpenReminderDialog } from '@/components/reminders/RemindersDialogHost'
 
 type WorktreePaletteItem = {
   id: string
@@ -905,6 +906,11 @@ export default function WorktreeJumpPalette(): React.JSX.Element | null {
     openSettingsPage()
   }, [openSettingsPage, openSettingsTarget])
 
+  const openReminderDialogAction = useCallback(() => {
+    // Why: let the palette close before mounting the dialog so Radix focus teardown can't fight it.
+    queueMicrotask(() => requestOpenReminderDialog())
+  }, [])
+
   const buildQuickActionContext = useCallback(
     () =>
       buildCmdJQuickActionContext({
@@ -915,11 +921,13 @@ export default function WorktreeJumpPalette(): React.JSX.Element | null {
         openNewTerminalTab: openNewTerminalTabInActiveWorkspace,
         openCreateWorkspace: openCreateWorkspaceAction,
         deleteActiveWorkspace: deleteActiveWorkspaceAction,
-        openAddQuickCommand: openAddQuickCommandAction
+        openAddQuickCommand: openAddQuickCommandAction,
+        openReminderDialog: openReminderDialogAction
       }),
     [
       deleteActiveWorkspaceAction,
       openAddQuickCommandAction,
+      openReminderDialogAction,
       openCreateWorkspaceAction,
       openNewBrowserTabInActiveWorkspace,
       openNewMarkdownInActiveWorkspace,

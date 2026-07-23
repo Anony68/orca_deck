@@ -40,6 +40,20 @@ export function buildNotificationOptions(args: NotificationDispatchRequest): {
     }
   }
 
+  if (args.source === 'reminder') {
+    const context = normalizeNotificationText(
+      args.worktreeLabel,
+      NOTIFICATION_TITLE_CONTEXT_MAX_LENGTH
+    )
+    const title = args.reminderOverdue ? 'Overdue reminder' : 'Reminder'
+    return {
+      title: context ? `${title} · ${context}` : title,
+      body:
+        normalizeNotificationText(args.reminderMessage, NOTIFICATION_BODY_PREVIEW_MAX_LENGTH) ||
+        'Reminder'
+    }
+  }
+
   const richOptions = buildAgentTaskCompleteNotificationOptions(args)
   if (richOptions) {
     return richOptions

@@ -1,4 +1,4 @@
-import { FileText, FolderPlus, Globe, Play, SquareTerminal, Trash2 } from 'lucide-react'
+import { BellPlus, FileText, FolderPlus, Globe, Play, SquareTerminal, Trash2 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { CmdJQuickActionAvailability, CmdJQuickActionContext } from './quick-action-context'
 import {
@@ -176,6 +176,27 @@ export const getCmdJQuickActions = createLocalizedCatalog((): CmdJQuickAction[] 
     isAvailable: () => ({ available: true }),
     run: async (ctx) => {
       ctx.openAddQuickCommand()
+      return { status: 'ok' }
+    }
+  },
+  {
+    id: 'new-reminder',
+    kind: 'action',
+    title: translate('auto.components.cmd.j.quick.actions.b93e5c17a2', 'New Reminder'),
+    description: translate(
+      'auto.components.cmd.j.quick.actions.d71a48e9c5',
+      'Set a reminder that notifies you later.'
+    ),
+    icon: BellPlus,
+    verbKeywords: [
+      translate('auto.components.cmd.j.quick.actions.verbs.remind', 'remind'),
+      translate('auto.components.cmd.j.quick.actions.verbs.setReminder', 'set reminder'),
+      translate('auto.components.cmd.j.quick.actions.verbs.newReminder', 'new reminder'),
+      translate('auto.components.cmd.j.quick.actions.verbs.notifyMe', 'notify me')
+    ],
+    isAvailable: () => ({ available: true }),
+    run: async (ctx) => {
+      ctx.openReminderDialog()
       return { status: 'ok' }
     }
   }

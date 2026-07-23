@@ -2,6 +2,7 @@
 import {
   AlertTriangle,
   Activity,
+  Bell,
   RotateCcw,
   Plug,
   ChevronDown,
@@ -112,6 +113,11 @@ const PetStatusSegment = lazyWithRetry(() =>
 const ResourceUsageStatusSegment = lazyWithRetry(() =>
   import('./ResourceUsageStatusSegment').then((module) => ({
     default: module.ResourceUsageStatusSegment
+  }))
+)
+const RemindersStatusSegment = lazyWithRetry(() =>
+  import('./RemindersStatusSegment').then((module) => ({
+    default: module.RemindersStatusSegment
   }))
 )
 const PortsStatusSegment = lazyWithRetry(() =>
@@ -2114,6 +2120,7 @@ function StatusBarInner({ floatingTerminalOpen }: StatusBarProps): React.JSX.Ele
   const showSsh = statusBarItems.includes('ssh')
   const showResourceUsage = statusBarItems.includes('resource-usage')
   const showPorts = statusBarItems.includes('ports')
+  const showReminders = statusBarItems.includes('reminders')
   const showFloatingTerminalToggle =
     floatingTerminalEnabled && floatingTerminalTriggerLocation === 'status-bar'
   // Why: meter-only children (excludes resource-usage) so the % display callout anchors to a real meter cluster.
@@ -2352,6 +2359,7 @@ function StatusBarInner({ floatingTerminalOpen }: StatusBarProps): React.JSX.Ele
             <ResourceUsageStatusSegment compact={compact} iconOnly={iconOnly} />
           ) : null}
           {showPorts ? <PortsStatusSegment compact={compact} iconOnly={iconOnly} /> : null}
+          {showReminders ? <RemindersStatusSegment compact={compact} iconOnly={iconOnly} /> : null}
           {showSsh ? <SshStatusSegment compact={compact} iconOnly={iconOnly} /> : null}
         </React.Suspense>
         {showFloatingTerminalToggle && (
@@ -2523,6 +2531,15 @@ function StatusBarInner({ floatingTerminalOpen }: StatusBarProps): React.JSX.Ele
           >
             <Plug className="size-3.5" />
             {translate('auto.components.status.bar.StatusBar.9659e38343', 'Ports')}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem
+            checked={statusBarItems.includes('reminders')}
+            onCheckedChange={() => {
+              toggleStatusBarItem('reminders')
+            }}
+          >
+            <Bell className="size-3.5" />
+            {translate('auto.components.status.bar.StatusBar.7c3e91a5d2', 'Reminders')}
           </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>

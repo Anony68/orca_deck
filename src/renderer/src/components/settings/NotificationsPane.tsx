@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { GlobalSettings } from '../../../../shared/types'
 import { Button } from '../ui/button'
 import { Separator } from '../ui/separator'
-import { BellRing, Bot, Siren } from 'lucide-react'
+import { Bell, BellRing, Bot, Siren } from 'lucide-react'
 import { useAppStore } from '@/store'
 import {
   MacNotificationPermissionCard,
@@ -159,6 +159,22 @@ export function NotificationsPane({
         onToggle={() =>
           void updateNotificationSettings({
             terminalBell: !notificationSettings.terminalBell
+          })
+        }
+      />
+
+      <NotificationSettingToggle
+        icon={<Bell className="size-4" />}
+        label={translate('auto.components.settings.NotificationsPane.c81e39a5d7', 'Reminders')}
+        description={translate(
+          'auto.components.settings.NotificationsPane.e92c47b1f8',
+          'A reminder you set (or asked an agent to set) comes due.'
+        )}
+        checked={notificationSettings.reminders}
+        disabled={!notificationSettings.enabled}
+        onToggle={() =>
+          void updateNotificationSettings({
+            reminders: !notificationSettings.reminders
           })
         }
       />

@@ -414,6 +414,12 @@ import type {
   BrowserScreencastResult
 } from '../../shared/runtime-types'
 import type { AutomationService } from '../automations/service'
+import type { ReminderService } from '../reminders/service'
+import type {
+  Reminder,
+  ReminderCreateInput,
+  ReminderUpdateInput
+} from '../../shared/reminder-types'
 import { RuntimeBrowserCommands } from './orca-runtime-browser'
 import { RemoteRuntimeTerminalCreateIdempotency } from './remote-runtime-terminal-create-idempotency'
 import { deriveRemoteRuntimeTerminalCreateHandle } from './remote-runtime-terminal-create-identity'
@@ -2292,7 +2298,7 @@ type ResolvedWorktreeInFlight = {
 // events after it — idempotent, no duplicate local pushes.
 export type MobileNotificationDispatchEvent = {
   type: 'notification'
-  source: 'agent-task-complete' | 'terminal-bell' | 'test'
+  source: 'agent-task-complete' | 'terminal-bell' | 'reminder' | 'test'
   title: string
   body: string
   worktreeId?: string
@@ -2859,6 +2865,7 @@ export class OrcaRuntimeService {
   private accountServices: RuntimeAccountServices | null = null
   private commitMessageAgentEnv: CommitMessageAgentEnvironmentResolvers | null = null
   private automationService: AutomationService | null = null
+  private reminderService: ReminderService | null = null
   private readonly claudeAgentTeams = new ClaudeAgentTeamsService()
   private mobileDictation: {
     id: string
@@ -3357,6 +3364,41 @@ export class OrcaRuntimeService {
 
   setAutomationService(service: AutomationService): void {
     this.automationService = service
+  }
+
+  setReminderService(service: ReminderService): void {
+    this.reminderService = service
+  }
+
+  private requireReminderService(): ReminderService {
+    if (!this.reminderService) {
+      throw new Error('runtime_unavailable')
+    }
+    return this.reminderService
+  }
+
+  listReminders(): Reminder[] {
+    return this.requireReminderService().list()
+  }
+
+  createReminder(input: ReminderCreateInput): Reminder {
+    return this.requireReminderService().create(input)
+  }
+
+  updateReminder(id: string, updates: ReminderUpdateInput): Reminder {
+    return this.requireReminderService().update(id, updates)
+  }
+
+  completeReminder(id: string): Reminder {
+    return this.requireReminderService().complete(id)
+  }
+
+  dismissReminder(id: string): Reminder {
+    return this.requireReminderService().dismiss(id)
+  }
+
+  deleteReminder(id: string): void {
+    this.requireReminderService().delete(id)
   }
 
   getRuntimeId(): string {

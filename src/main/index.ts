@@ -201,6 +201,7 @@ import { OffscreenBrowserBackend } from './browser/offscreen-browser-backend'
 import { initializeBrowserSessionsForApp } from './browser/browser-session-startup'
 import { setUnreadDockBadgeCount } from './dock/unread-badge'
 import { AutomationService } from './automations/service'
+import { ReminderService } from './reminders/service'
 import { createHeadlessAutomationOutputSnapshotBuffer } from './automations/headless-dispatch'
 import { buildHeadlessAutomationWorktreeCreateArgs } from './automations/headless-workspace-create'
 import { AgentAwakeService } from './agent-awake-service'
@@ -274,6 +275,7 @@ let unsubscribeSystemResumeBroadcast: (() => void) | null = null
 let watcherShutdownPromise: Promise<void> | null = null
 let watcherShutdownDone = false
 let automations: AutomationService | null = null
+let reminders: ReminderService | null = null
 let keybindings: KeybindingService | null = null
 // Why: a reload intent must not leak to a later load; the recovery reload re-fires did-finish-load, so its flag spares live PTYs from the orphan sweep (#5787).
 const expectedRendererReload = createWebContentsTimedFlag()
@@ -1139,6 +1141,7 @@ function openMainWindow(): BrowserWindow {
     agentAwakeService ?? undefined,
     crashReports ?? undefined,
     keybindings,
+    reminders ?? undefined,
     {
       getAdditionalAiVaultCodexHomePaths: () =>
         codexRuntimeHome ? codexRuntimeHome.getHostCodexHomePathsForSessionDiscovery() : [],
@@ -1159,6 +1162,8 @@ function openMainWindow(): BrowserWindow {
   )
   automations.setWebContents(window.webContents)
   automations.start()
+  reminders?.setWebContents(window.webContents)
+  reminders?.start()
   attachMainWindowServices(
     window,
     store,
@@ -1191,6 +1196,7 @@ function openMainWindow(): BrowserWindow {
     }
     clearExpectedRendererReload(rendererWebContentsId)
     automations?.setWebContents(null)
+    reminders?.setWebContents(null)
     // Why: detach the hook listener on close so the server never fires into destroyed webContents before reopen, and replay runs only on deliberate recreations.
     agentHookServer.setListener(null)
     agentHookServer.setPaneStatusClearListener(null)
@@ -2139,6 +2145,8 @@ app.whenReady().then(async () => {
       : undefined
   })
   runtimeService.setAutomationService(automations)
+  reminders = new ReminderService(store)
+  runtimeService.setReminderService(reminders)
   runtimeService.setAccountServices({ claudeAccounts, codexAccounts, rateLimits })
   runtimeService.setCommitMessageAgentEnvironmentResolvers({
     // Why: Codex hooks/auth live in Orca's managed runtime home even for the default path, so every launch must resolve CODEX_HOME via runtime-home.
@@ -2403,6 +2411,7 @@ app.whenReady().then(async () => {
     }
     // Why: headless serve never opens a renderer, so arm scheduled automation dispatch here.
     automations.start()
+    reminders?.start()
     await printServeReady(serveOptions)
     return
   }
@@ -2493,6 +2502,7 @@ app.on('will-quit', (e) => {
   // Why: stats.flush() must precede killAllPty() so still-running agents emit synthetic agent_stop events (killAllPty skips runtime.onPtyExit()).
   starNag?.stop()
   automations?.stop()
+  reminders?.stop()
   setUnreadDockBadgeCount(0)
   agentHookServer.stop()
   // Why: cancels relay restart/reinstall timers and kills wsl.exe children deterministically, not via stdio-pipe teardown.
