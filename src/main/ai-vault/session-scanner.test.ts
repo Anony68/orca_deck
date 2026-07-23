@@ -746,7 +746,7 @@ describe('scanAiVaultSessions', () => {
     expect(commandByAgent.get('copilot')).toBe(
       "cd '/tmp/copilot' && copilot --resume='copilot-session'"
     )
-    expect(commandByAgent.get('cursor')).toBe("cursor-agent --resume 'cursor-session'")
+    expect(commandByAgent.get('cursor')).toBe("agent --resume 'cursor-session'")
     expect(commandByAgent.get('opencode')).toBe(
       "cd '/tmp/opencode' && opencode --session 'opencode-session'"
     )

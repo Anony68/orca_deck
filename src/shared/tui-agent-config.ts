@@ -212,9 +212,11 @@ export const TUI_AGENT_CONFIG: Record<TuiAgent, TuiAgentConfig> = {
     promptInjectionMode: 'stdin-after-start'
   },
   cursor: {
-    detectCmd: 'cursor-agent',
-    launchCmd: 'cursor-agent',
-    expectedProcess: 'cursor-agent',
+    // Why: Cursor CLI renamed its binary from `cursor-agent` to `agent`; keep the old name as alias so pre-rename installs still detect.
+    detectCmd: 'agent',
+    detectCmdAliases: ['cursor-agent'],
+    launchCmd: 'agent',
+    expectedProcess: 'agent',
     promptInjectionMode: 'argv',
     // Why: first-launch trust menu swallows the bracketed paste; pre-write the .workspace-trusted marker so it skips (agent-trust-presets.ts).
     preflightTrust: 'cursor'

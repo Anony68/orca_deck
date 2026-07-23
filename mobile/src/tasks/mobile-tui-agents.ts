@@ -135,7 +135,8 @@ export const MOBILE_TUI_AGENT_LAUNCH_COMMANDS: Record<TuiAgent, string> = {
   codebuff: 'codebuff',
   'command-code': 'command-code',
   continue: 'continue',
-  cursor: 'cursor-agent',
+  // Why: Cursor CLI renamed its binary from `cursor-agent` to `agent`.
+  cursor: 'agent',
   droid: 'droid',
   kimi: 'kimi',
   'mistral-vibe': 'mistral-vibe',

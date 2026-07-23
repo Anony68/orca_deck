@@ -84,6 +84,11 @@ export function agentPickerBlankTerminalMatches(rawQuery: string): boolean {
 }
 
 function scoreAgent(agent: AgentCatalogEntry, query: string): number {
+  // Why: typing an exact binary name must surface its agent first, even when
+  // another agent's label contains that word (e.g. `agent` vs "Claude Agent Teams").
+  if (normalizeSearchText(agent.cmd) === query) {
+    return -1
+  }
   return Math.min(
     scoreCandidate(query, agent.label, 0),
     scoreCandidate(query, agent.id, 600),

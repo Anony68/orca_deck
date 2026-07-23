@@ -344,7 +344,7 @@ describe('AgentsPane', () => {
     expect(matchesSettingsSearch('command-code', getAgentsPaneSearchEntries())).toBe(true)
     expect(matchesSettingsSearch('command code', getAgentsPaneSearchEntries())).toBe(true)
     expect(matchesSettingsSearch('agy', getAgentsPaneSearchEntries())).toBe(true)
-    expect(matchesSettingsSearch('cursor-agent', getAgentsPaneSearchEntries())).toBe(true)
+    expect(matchesSettingsSearch('agent', getAgentsPaneSearchEntries())).toBe(true)
   })
 
   it('renders per-agent availability as labeled status choices without row explanation copy', () => {

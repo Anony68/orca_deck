@@ -502,7 +502,8 @@ export const COMMIT_MESSAGE_AGENT_SPECS: Partial<Record<TuiAgent, CommitMessageA
   cursor: {
     id: 'cursor',
     label: 'Cursor',
-    binary: 'cursor-agent',
+    // Why: Cursor CLI renamed its binary from `cursor-agent` to `agent`.
+    binary: 'agent',
     promptDelivery: 'argv',
     buildArgs: ({ prompt, model }) => [
       '--print',
@@ -516,7 +517,7 @@ export const COMMIT_MESSAGE_AGENT_SPECS: Partial<Record<TuiAgent, CommitMessageA
       prompt
     ],
     modelSource: 'dynamic',
-    modelDiscovery: { binary: 'cursor-agent', args: ['--list-models'], parse: parseCursorModels },
+    modelDiscovery: { binary: 'agent', args: ['--list-models'], parse: parseCursorModels },
     models: [{ id: 'auto', label: 'Auto' }],
     defaultModelId: 'auto'
   },

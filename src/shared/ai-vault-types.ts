@@ -296,9 +296,6 @@ export function aiVaultAgentLabel(agent: AiVaultAgent): string {
 }
 
 function defaultAiVaultResumeCommandBase(agent: AiVaultAgent): string {
-  if (agent === 'cursor') {
-    return 'cursor-agent'
-  }
   if (agent === 'hermes') {
     return 'hermes'
   }

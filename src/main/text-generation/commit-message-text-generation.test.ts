@@ -340,7 +340,7 @@ describe('discoverCommitMessageModelsLocal', () => {
       ]
     })
     expect(spawnMock).toHaveBeenCalledWith(
-      'cursor-agent',
+      'agent',
       ['--list-models'],
       expect.objectContaining({ windowsHide: true })
     )
@@ -418,7 +418,7 @@ describe('discoverCommitMessageModelsLocal', () => {
       const shellCommand = spawnMock.mock.calls[0]?.[1]?.[5] as string
       expect(shellCommand).toContain('getent passwd')
       expect(shellCommand).toContain('/mnt/c/repo')
-      expect(shellCommand).toContain("'cursor-agent'")
+      expect(shellCommand).toContain("'agent'")
       expect(shellCommand).toContain('--list-models')
     })
   })
@@ -571,7 +571,7 @@ describe('generateCommitMessageFromContext', () => {
 
     expect(result).toEqual({
       success: false,
-      error: 'cursor-agent not found on the remote PATH. Install Cursor there.'
+      error: 'agent not found on the remote PATH. Install Cursor there.'
     })
   })
 

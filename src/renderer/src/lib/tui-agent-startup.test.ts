@@ -115,7 +115,7 @@ describe('buildAgentStartupPlan', () => {
     })
   })
 
-  it('uses cursor-agent as the actual launch binary', () => {
+  it('uses the renamed `agent` binary as the actual cursor launch command', () => {
     expect(
       buildAgentStartupPlan({
         agent: 'cursor',
@@ -125,10 +125,10 @@ describe('buildAgentStartupPlan', () => {
       })
     ).toEqual({
       agent: 'cursor',
-      launchCommand: "cursor-agent 'Review this file'",
-      expectedProcess: 'cursor-agent',
+      launchCommand: "agent 'Review this file'",
+      expectedProcess: 'agent',
       followupPrompt: null,
-      launchConfig: emptyLaunchConfig('cursor-agent')
+      launchConfig: emptyLaunchConfig('agent')
     })
   })
 

@@ -144,9 +144,7 @@ describe('ai vault resume command runtime', () => {
           codexHome: null
         }
       })
-    ).toBe(
-      "Set-Location -LiteralPath 'C:\\Users\\alice\\repo'; cursor-agent --resume 'session one'"
-    )
+    ).toBe("Set-Location -LiteralPath 'C:\\Users\\alice\\repo'; agent --resume 'session one'")
   })
 
   it('queues a PowerShell-valid local OMP resume by absolute transcript path', () => {
